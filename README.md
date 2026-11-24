@@ -36,7 +36,7 @@ Koyu tema (Grafit):
 
 | Özellik | Nerede |
 |---|---|
-| 16 hazır proje; hepsi simülasyonda çalışır (Wi-Fi, MQTT, Bluetooth, BLE örnekleri dahil) | Ana sayfa |
+| 51 hazır proje, Çok kolay'dan İleri'ye: LED, buton, sensör, servo, röle, web sunucusu, MQTT, Bluetooth, BLE, internetten veri. 41'i simülasyonda çalışır; 10'u (LCD, tuş takımı, gaz, alev, ses, IR, RTC, joystick, terazi, 7 segment) gerçek devre için şema, kod ve adımlarla gelir | Ana sayfa |
 | Proje vitrini: kartta devre resmi ve özellik etiketleri; ilk adımda "Ne işe yarar / Nasıl çalışır / Ne öğreneceksin" ve kendi kendine oynayan canlı demo | Ana sayfa, Fikir |
 | Her proje 6 adım: Fikir, Parçalar, Bağlantılar, Kontrol, Kod, Test | Proje sayfası |
 | Gerçek görünüşlü etkileşimli şema: pin adı, bağlandığı yer, adım adım kablo | Bağlantılar |

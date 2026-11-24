@@ -1,0 +1,146 @@
+{
+  "surum": 1,
+  "id": "uno-gaz-alarmi",
+  "baslik": "Gaz alarmı",
+  "ozet": "MQ-2 sensörü gaz ya da duman algılayınca buzzer öter, kırmızı LED yanar.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "Seri Port Ekranı gaz değerini (0–1023) yarım saniyede bir yazar.",
+    "İlk 60 saniye ısınma süresidir: alarm çalmaz, LED yavaşça yanıp söner.",
+    "Değer ESIK sabitini geçince buzzer kesik kesik öter, kırmızı LED yanar.",
+    "Değer eşiğin altına inince alarm susar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gas-sensor",
+      "id": "gaz",
+      "left": -200,
+      "top": 360,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 240,
+      "top": 40,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "gaz:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "gaz:VCC",
+      "uno:5V",
+      "red",
+      [],
+      "Isıtıcı yaklaşık 150 mA çeker; USB yeter."
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "bz1:1",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "gaz:AOUT",
+      "uno:A0",
+      "yellow",
+      [],
+      "Modülde AO yazar. DO boş kalır."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "orange",
+      []
+    ],
+    [
+      "bz1:2",
+      "uno:8",
+      "green",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-gaz-alarmi.ino",
+    "kutuphaneler": [],
+    "icerik": "// Gaz alarmı: MQ-2 değeri eşiği geçince buzzer öter, kırmızı LED yanar.\nconst int GAZ_PIN = A0;\nconst int BUZZER_PIN = 8;\nconst int LED_PIN = 9;\nconst int ESIK = 400;                       // 0-1023; temiz havadaki değerin 100-150 üstü\nconst unsigned long ISINMA_SURESI = 60000;  // ms; sensör ısınırken alarm verilmez\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(BUZZER_PIN, OUTPUT);\n  pinMode(LED_PIN, OUTPUT);\n  Serial.println(\"MQ-2 isiniyor, lutfen bekleyin...\");\n}\n\nvoid loop() {\n  int deger = analogRead(GAZ_PIN);\n  Serial.print(\"Gaz: \");\n  Serial.println(deger);\n\n  // Isınma süresi: LED yavaşça yanıp söner, alarm yok.\n  if (millis() < ISINMA_SURESI) {\n    digitalWrite(LED_PIN, (millis() / 1000) % 2);\n    delay(500);\n    return;\n  }\n\n  if (deger > ESIK) {\n    Serial.println(\"ALARM: gaz algilandi!\");\n    digitalWrite(LED_PIN, HIGH);\n    tone(BUZZER_PIN, 2000, 250);  // kesik kesik öter\n  } else {\n    digitalWrite(LED_PIN, LOW);\n    noTone(BUZZER_PIN);\n  }\n  delay(500);\n}\n"
+  },
+  "montaj": [
+    "MQ-2 modülünü breadboard'a tak. Modülde VCC, GND, DO, AO yazar; DO bu projede boş kalır.",
+    "Kırmızı LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Buzzer'ın uzun bacağı (+) 8. pine gider.",
+    "Kabloları sırayla tak.",
+    "Yeni sensörü ilk kez 24 saat açık bırak; okuması ancak böyle oturur. Sonraki her açılışta 1–2 dakika ısınır.",
+    "Isındıktan sonra temiz havada Seri Port Ekranı'ndaki değeri not al. ESIK sabitine bu değerin 100–150 fazlasını yaz.",
+    "Sensör çalışırken ısınır; ona dokunma ve yanıcı maddeden uzak tut."
+  ],
+  "testler": [
+    "Açılışta Seri Port Ekranı (9600) \"MQ-2 isiniyor\" yazar; LED yavaşça yanıp söner.",
+    "60 saniye sonra temiz havada alarm sessizdir.",
+    "Çakmağı yakmadan gazını 1–2 saniye sensöre tut: değer yükselir, alarm çalar.",
+    "Gaz dağılınca değer düşer, alarm susar."
+  ],
+  "tanitim": {
+    "amac": "Mutfakta ya da garajda gaz ve dumanı sesle haber veren alarm. MQ-2 sensörü havadaki yanıcı gazı ölçer; değer eşiği geçince alarm çalar. Bu bir deney devresidir; evde onaylı gaz dedektörünün yerini tutmaz.",
+    "nasil": [
+      "MQ-2 içindeki ısıtıcı sensörü çalışma sıcaklığına getirir.",
+      "Gaz arttıkça AOUT gerilimi yükselir; Arduino bunu A0'dan 0–1023 olarak okur.",
+      "Değer eşiği geçince buzzer ve kırmızı LED çalışır.",
+      "Seri Port Ekranı değeri gösterir; eşiği buna göre ayarlarsın."
+    ],
+    "ogrenilenler": [
+      "analogRead",
+      "Eşikle karar",
+      "Sensör ısınma süresi",
+      "millis()"
+    ],
+    "demo": []
+  }
+}

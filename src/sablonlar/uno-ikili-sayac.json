@@ -1,0 +1,87 @@
+{
+  "surum": 1,
+  "id": "uno-ikili-sayac",
+  "baslik": "İkili sayaç (Uno)",
+  "ozet": "Butona her basışta sayı 1 artar; 4 LED sayıyı ikili sistemde gösterir.",
+  "zorluk": "Kolay",
+  "sure": "40 dakika",
+  "gereksinimler": [
+    "Açılışta sayı 0'dır; bütün LED'ler söner.",
+    "Butona her basışta sayı yalnız 1 artar.",
+    "15'ten sonra sayı 0'a döner.",
+    "Seri ekran (9600) sayıyı ve ikili hâlini yazar."
+  ],
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "left": 0, "top": 200, "attrs": {} },
+    { "type": "wokwi-led", "id": "led8", "left": -83, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led4", "left": -3, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led2", "left": 77, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led1", "left": 157, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-resistor", "id": "r1", "left": -91, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "left": -11, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r3", "left": 69, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r4", "left": 149, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-pushbutton", "id": "btn1", "left": 300, "top": 60, "attrs": { "color": "blue" } }
+  ],
+  "connections": [
+    ["led8:C", "uno:GND.1", "black", [], "LED'in kısa bacağı GND'ye."],
+    ["led4:C", "uno:GND.1", "black", []],
+    ["led2:C", "uno:GND.1", "black", []],
+    ["led1:C", "uno:GND.1", "black", []],
+    ["btn1:2.l", "uno:GND.1", "black", [], "Butonun bir bacağı GND'ye."],
+    ["led8:A", "r1:1", "orange", [], "Soldaki LED: 8'ler basamağı."],
+    ["r1:2", "uno:11", "green", []],
+    ["led4:A", "r2:1", "orange", [], "4'ler basamağı."],
+    ["r2:2", "uno:10", "green", []],
+    ["led2:A", "r3:1", "orange", [], "2'ler basamağı."],
+    ["r3:2", "uno:9", "green", []],
+    ["led1:A", "r4:1", "orange", [], "Sağdaki LED: 1'ler basamağı."],
+    ["r4:2", "uno:8", "green", []],
+    ["btn1:1.l", "uno:2", "blue", [], "Öbür bacak 2. pine. Kod iç pull-up direncini açar."]
+  ],
+  "kod": {
+    "dosya": "uno-ikili-sayac.ino",
+    "kutuphaneler": [],
+    "icerik": "// İkili sayaç: butona her basışta sayı 1 artar, 4 LED sayıyı ikili gösterir.\nconst int LEDLER[] = {11, 10, 9, 8};  // soldan sağa: 8'ler, 4'ler, 2'ler, 1'ler basamağı\nconst int BUTON_PIN = 2;             // butonun öbür ucu GND'de; iç pull-up açık\nconst int EN_BUYUK = 15;             // 4 LED en çok 15 gösterir\nconst unsigned long TITRESIM_MS = 50;  // buton sıçramasını yok sayma süresi\n\nint sayi = 0;\nint oncekiOkuma = HIGH;\nunsigned long sonDegisim = 0;\n\n// Sayının her bitini kendi LED'ine yazar, seri ekrana da basar.\nvoid goster(int n) {\n  Serial.print(\"Sayi: \");\n  Serial.print(n);\n  Serial.print(\"  Ikili: \");\n  for (int i = 0; i < 4; i++) {\n    int bit = (n >> (3 - i)) & 1;  // soldaki LED en büyük basamak\n    digitalWrite(LEDLER[i], bit ? HIGH : LOW);\n    Serial.print(bit);\n  }\n  Serial.println();\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(BUTON_PIN, INPUT_PULLUP);\n  for (int i = 0; i < 4; i++) {\n    pinMode(LEDLER[i], OUTPUT);\n  }\n  goster(sayi);\n}\n\nvoid loop() {\n  int okuma = digitalRead(BUTON_PIN);\n  if (okuma != oncekiOkuma && millis() - sonDegisim > TITRESIM_MS) {\n    sonDegisim = millis();\n    if (okuma == LOW) {                    // basıldı\n      sayi = (sayi + 1) % (EN_BUYUK + 1);  // 15'ten sonra 0\n      goster(sayi);\n    }\n    oncekiOkuma = okuma;\n  }\n}\n"
+  },
+  "montaj": [
+    "4 LED'i breadboard'a yan yana diz. Soldaki LED en büyük basamaktır.",
+    "Her LED'in uzun bacağına bir 220 Ω direnç bağla.",
+    "Butonu breadboard'un ortasındaki boşluğun üstüne tak.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Açılışta bütün LED'ler sönük; seri ekran \"Sayi: 0\" yazıyor.",
+    "Butona 1 kez bas: yalnız sağdaki LED yanıyor (0001).",
+    "Butona 5 kez basınca 0101 görünüyor: 2. ve 4. LED yanıyor.",
+    "16. basışta bütün LED'ler sönüyor; sayı 0'a dönüyor."
+  ],
+  "tanitim": {
+    "amac": "Sayıların ikili sistemde nasıl yazıldığını LED'lerle gösterir. Bilgisayarlar her sayıyı böyle 0 ve 1'lerle tutar. Her LED bir basamaktır: yanık 1, sönük 0.",
+    "nasil": [
+      "Buton 2. pine bağlıdır; basılınca pin LOW okunur.",
+      "Kod sıçramayı 50 ms süzer; her basış sayıyı yalnız 1 artırır.",
+      "Sayının her biti ayrı bir LED'e yazılır: 8, 4, 2, 1.",
+      "15'ten sonra sayı 0'a döner."
+    ],
+    "ogrenilenler": [
+      "İkili sayılar",
+      "Bit kaydırma (>>)",
+      "Sıçrama (debounce)",
+      "INPUT_PULLUP"
+    ],
+    "demo": [
+      { "sure": 1500, "yazi": "Açılış: sayı 0, bütün LED'ler sönük." },
+      { "sure": 300, "yazi": "1. basış: 0001.", "eylem": { "tur": "bas", "id": "btn1" } },
+      { "sure": 1200, "yazi": "1. basış: 0001.", "eylem": { "tur": "birak", "id": "btn1" } },
+      { "sure": 300, "yazi": "2. basış: 0010.", "eylem": { "tur": "bas", "id": "btn1" } },
+      { "sure": 1200, "yazi": "2. basış: 0010.", "eylem": { "tur": "birak", "id": "btn1" } },
+      { "sure": 300, "yazi": "3. basış: 0011.", "eylem": { "tur": "bas", "id": "btn1" } },
+      { "sure": 1200, "yazi": "3. basış: 0011.", "eylem": { "tur": "birak", "id": "btn1" } },
+      { "sure": 300, "yazi": "4. basış: 0100.", "eylem": { "tur": "bas", "id": "btn1" } },
+      { "sure": 1200, "yazi": "4. basış: 0100.", "eylem": { "tur": "birak", "id": "btn1" } },
+      { "sure": 300, "yazi": "5. basış: 0101.", "eylem": { "tur": "bas", "id": "btn1" } },
+      { "sure": 1500, "yazi": "5. basış: 0101.", "eylem": { "tur": "birak", "id": "btn1" } }
+    ]
+  }
+}

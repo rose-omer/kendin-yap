@@ -1,0 +1,239 @@
+{
+  "surum": 1,
+  "id": "uno-lcd-sicaklik",
+  "baslik": "LCD'de sıcaklık ve nem",
+  "ozet": "DHT22 sıcaklığı ve nemi ölçer; 16x2 LCD ekranda gösterir.",
+  "zorluk": "Kolay",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "LCD'nin üst satırı sıcaklığı °C olarak gösterir.",
+    "Alt satır nemi % olarak gösterir.",
+    "Değerler 2 saniyede bir yenilenir.",
+    "Sensör okunamazsa LCD \"Sensor hatasi\" yazar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 20,
+      "top": 240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "left": 0,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "left": -140,
+      "top": 100,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rArka",
+      "left": 345,
+      "top": 160,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "left": 350,
+      "top": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rCek",
+      "left": 360,
+      "top": 440,
+      "attrs": {
+        "value": "10000"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "lcd:VSS",
+      "uno:GND.1",
+      "black",
+      [],
+      "LCD'nin 1. pini (VSS)."
+    ],
+    [
+      "lcd:VDD",
+      "uno:5V",
+      "red",
+      [],
+      "LCD'nin 2. pini (VDD)."
+    ],
+    [
+      "lcd:RW",
+      "uno:GND.1",
+      "black",
+      [],
+      "5. pin (RW) GND'de: LCD yalnız yazı alır."
+    ],
+    [
+      "lcd:K",
+      "uno:GND.1",
+      "black",
+      [],
+      "16. pin (K): arka ışığın eksisi."
+    ],
+    [
+      "pot:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pot:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "pot:SIG",
+      "lcd:V0",
+      "yellow",
+      [],
+      "Potun orta bacağı LCD'nin 3. pinine (V0): kontrast."
+    ],
+    [
+      "lcd:A",
+      "rArka:1",
+      "orange",
+      [],
+      "15. pin (A): arka ışığın artısı."
+    ],
+    [
+      "rArka:2",
+      "uno:5V",
+      "red",
+      [],
+      "220 Ω arka ışığın akımını sınırlar."
+    ],
+    [
+      "dht:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "dht:GND",
+      "uno:GND.3",
+      "black",
+      []
+    ],
+    [
+      "rCek:1",
+      "uno:5V",
+      "red",
+      [],
+      "10 kΩ çekme direnci. 3 pinli DHT22 modülünde bu direnç vardır; o zaman bu iki kabloyu atla."
+    ],
+    [
+      "rCek:2",
+      "dht:SDA",
+      "orange",
+      []
+    ],
+    [
+      "lcd:RS",
+      "uno:12",
+      "blue",
+      [],
+      "4. pin (RS)."
+    ],
+    [
+      "lcd:E",
+      "uno:11",
+      "purple",
+      [],
+      "6. pin (E)."
+    ],
+    [
+      "lcd:D4",
+      "uno:5",
+      "green",
+      [],
+      "11. pin (D4). D0–D3 (7–10. pinler) boş kalır."
+    ],
+    [
+      "lcd:D5",
+      "uno:4",
+      "green",
+      [],
+      "12. pin (D5)."
+    ],
+    [
+      "lcd:D6",
+      "uno:3",
+      "green",
+      [],
+      "13. pin (D6)."
+    ],
+    [
+      "lcd:D7",
+      "uno:2",
+      "green",
+      [],
+      "14. pin (D7)."
+    ],
+    [
+      "dht:SDA",
+      "uno:7",
+      "yellow",
+      [],
+      "DHT22'nin 2. pini (veri)."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-lcd-sicaklik.ino",
+    "kutuphaneler": [
+      "DHT sensor library (Adafruit)",
+      "Adafruit Unified Sensor"
+    ],
+    "icerik": "// LCD'de sıcaklık ve nem: DHT22 ölçer, 16x2 LCD (4 bit kipi) gösterir.\n#include <LiquidCrystal.h>\n#include <DHT.h>\n\nconst int DHT_PIN = 7;\nconst int LCD_RS = 12;\nconst int LCD_E = 11;\nconst int LCD_D4 = 5;\nconst int LCD_D5 = 4;\nconst int LCD_D6 = 3;\nconst int LCD_D7 = 2;\nconst unsigned long OLCUM_ARALIGI = 2000; // ms; DHT22 en hızlı 2 sn'de bir ölçer.\n\nLiquidCrystal lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7);\nDHT dht(DHT_PIN, DHT22);\n\n// LCD'de derece işareti yok; 5x8 piksellik kendi karakterimizi çizeriz.\nbyte derece[8] = {0b00110, 0b01001, 0b01001, 0b00110, 0, 0, 0, 0};\n\nvoid setup() {\n  Serial.begin(9600);\n  dht.begin();\n  lcd.begin(16, 2);\n  lcd.createChar(0, derece);\n  lcd.print(\"Olculuyor...\");\n}\n\nvoid loop() {\n  delay(OLCUM_ARALIGI);\n  float sicaklik = dht.readTemperature();\n  float nem = dht.readHumidity();\n\n  lcd.clear();\n  if (isnan(sicaklik) || isnan(nem)) {\n    lcd.print(\"Sensor hatasi\");\n    lcd.setCursor(0, 1);\n    lcd.print(\"Kablo kontrol et\");\n    Serial.println(\"DHT22 okunamadi\");\n    return;\n  }\n\n  // Üst satır: sıcaklık.\n  lcd.print(\"Sicaklik: \");\n  lcd.print(sicaklik, 1);\n  lcd.write(byte(0));\n  lcd.print(\"C\");\n  // Alt satır: nem.\n  lcd.setCursor(0, 1);\n  lcd.print(\"Nem:      \");\n  lcd.print(nem, 1);\n  lcd.print(\"%\");\n\n  Serial.print(\"Sicaklik: \");\n  Serial.print(sicaklik, 1);\n  Serial.print(\" C  Nem: \");\n  Serial.print(nem, 1);\n  Serial.println(\" %\");\n}\n"
+  },
+  "montaj": [
+    "LCD'yi breadboard'a tak. Pinleri soldan sağa 1 (VSS) ile 16 (K) arasında sıralıdır.",
+    "Potansiyometreyi LCD'nin yanına koy. Orta bacak (SIG) LCD'nin V0 pinine gider.",
+    "Arka ışık için 220 Ω direnci LCD'nin A pini (15) ile 5V arasına koy.",
+    "DHT22'nin ızgaralı yüzü sana baksın. Pinler soldan sağa: VCC, veri (SDA), boş (NC), GND.",
+    "10 kΩ direnci DHT22'nin veri pini ile 5V arasına koy. 3 pinli DHT22 modülünde bu direnç vardır; o zaman atla.",
+    "Kabloları sırayla tak.",
+    "Kodu yükle. LCD'de yazı görünmezse ya da yalnız kareler görünürse potansiyometreyi yavaşça çevir."
+  ],
+  "testler": [
+    "Kart açılınca LCD \"Olculuyor...\" yazar.",
+    "2 saniye sonra sıcaklık ve nem görünür.",
+    "Sensöre hafifçe üfle: nem birkaç saniyede yükselir.",
+    "Sensörü parmaklarınla tut: sıcaklık yavaşça artar.",
+    "Seri Port Ekranı (9600) aynı değerleri yazar."
+  ],
+  "tanitim": {
+    "amac": "Odadaki sıcaklığı ve nemi küçük bir ekranda gösterir. Bilgisayar gerekmez; kart adaptörden ya da powerbank'ten beslenir. Masa göstergesi, sera ya da bebek odası için kullanılır.",
+    "nasil": [
+      "DHT22 sıcaklığı ve nemi ölçer; tek veri kablosuyla gönderir.",
+      "Arduino sensörü 2 saniyede bir okur.",
+      "LiquidCrystal kütüphanesi LCD'ye 4 veri kablosuyla yazar (4 bit kipi).",
+      "Potansiyometre yazının kontrastını ayarlar."
+    ],
+    "ogrenilenler": [
+      "16x2 LCD (4 bit)",
+      "Kontrast ayarı",
+      "DHT22 okuma",
+      "Özel karakter"
+    ],
+    "demo": []
+  }
+}

@@ -1,0 +1,297 @@
+{
+  "surum": 1,
+  "id": "esp32-akilli-sera",
+  "baslik": "Akıllı sera",
+  "ozet": "Sıcaklık, hava nemi ve toprak nemi OLED ekranda ve web sayfasında görünür. Toprak kuruyunca pompa kendisi çalışır; sayfadaki \"Sula\" düğmesi elle sulatır.",
+  "zorluk": "İleri",
+  "sure": "3 saat",
+  "gereksinimler": [
+    "OLED ekran sıcaklığı, hava nemini, toprak nemini ve pompa durumunu gösterir.",
+    "Toprak nemi %30'un altına inince pompa 5 saniye çalışır.",
+    "İki otomatik sulama arasında en az 1 dakika geçer.",
+    "Web sayfası değerleri gösterir; \"Sula\" düğmesi pompayı 5 saniye çalıştırır.",
+    "Pompa ayrı 5 V kaynaktan beslenir; kaynağın GND'si kartın GND'sine bağlıdır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 360,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "ky-modul",
+      "id": "toprak",
+      "left": 120,
+      "top": 20,
+      "attrs": {
+        "baslik": "Toprak nem sensörü",
+        "sag": "VCC,GND,AO",
+        "besleme": "VCC:3.3-5.5",
+        "gnd": "GND",
+        "renk": "#7a5230",
+        "arama": "kapasitif toprak nem sensörü",
+        "ozet": "Topraktaki nemi ölçer. AO analog çıkış."
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "role",
+      "left": 120,
+      "top": 190,
+      "attrs": {
+        "baslik": "Röle modülü (5 V, 1 kanal)",
+        "sol": "NO,COM,NC",
+        "sag": "VCC,GND,IN",
+        "besleme": "VCC:4.5-5.5",
+        "gnd": "GND",
+        "mcuCikis": "IN",
+        "renk": "#1d6fd8",
+        "arama": "5V tek kanal röle modülü",
+        "ozet": "Pompayı açıp kapatır."
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "guc",
+      "left": -140,
+      "top": 40,
+      "attrs": {
+        "baslik": "5 V güç kaynağı",
+        "sag": "+5V,GND",
+        "kaynak": "+5V:5",
+        "gnd": "GND",
+        "renk": "#c2410c",
+        "arama": "5V 2A adaptör",
+        "ozet": "Röle ve pompayı besler."
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "pompa",
+      "left": -140,
+      "top": 220,
+      "attrs": {
+        "baslik": "Mini su pompası (5 V)",
+        "sag": "+,-",
+        "renk": "#0e8a8a",
+        "arama": "5V mini dalgıç su pompası",
+        "ozet": "Suyu hortumla basar."
+      }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "left": 540,
+      "top": -100,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "left": 540,
+      "top": 100,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "dht:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "dht:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "dht:SDA",
+      "esp:D4",
+      "green",
+      [],
+      "Çıplak sensörde SDA ile VCC arasına 10 kΩ direnç koy; modülde vardır."
+    ],
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "oled:VIN",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "oled:DATA",
+      "esp:D21",
+      "blue",
+      [],
+      "Modülde SDA yazar."
+    ],
+    [
+      "oled:CLK",
+      "esp:D22",
+      "yellow",
+      [],
+      "Modülde SCL yazar."
+    ],
+    [
+      "toprak:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "toprak:VCC",
+      "esp:3V3",
+      "red",
+      [],
+      "3V3 kullan: 5 V ile sensörün çıkışı 3,3 V'u aşabilir."
+    ],
+    [
+      "toprak:AO",
+      "esp:D32",
+      "orange",
+      [],
+      "D32 ADC1 pinidir; Wi-Fi açıkken de analog okur."
+    ],
+    [
+      "role:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "role:IN",
+      "esp:D26",
+      "purple",
+      [],
+      "Çoğu röle modülü 3,3 V sinyalle çalışır. Çekmezse 3,3 V uyumlu modül al."
+    ],
+    [
+      "role:VCC",
+      "guc:+5V",
+      "red",
+      []
+    ],
+    [
+      "guc:GND",
+      "esp:GND.2",
+      "black",
+      [],
+      "Ortak GND: kaynağın eksisi kartın GND'sine de gider."
+    ],
+    [
+      "guc:+5V",
+      "role:COM",
+      "red",
+      []
+    ],
+    [
+      "role:NO",
+      "pompa:+",
+      "orange",
+      [],
+      "NO: röle çekince kapanan uç."
+    ],
+    [
+      "pompa:-",
+      "guc:GND",
+      "black",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-akilli-sera.ino",
+    "kutuphaneler": [
+      "DHT sensor library (Adafruit)",
+      "Adafruit Unified Sensor",
+      "Adafruit SSD1306",
+      "Adafruit GFX Library"
+    ],
+    "icerik": "// Akıllı sera: sıcaklık, hava nemi ve toprak nemini ölç; toprak kuruyunca pompayı çalıştır.\n// OLED durumu gösterir. Web sayfası değerleri verir ve \"Sula\" düğmesiyle elle sulatır.\n#include <WiFi.h>\n#include <WebServer.h>\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n#include <DHT.h>\n\nconst char* AG_ADI = \"EvimWiFi\";     // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";    // kendi Wi-Fi parolan\n\nconst int DHT_PIN = 4;      // DHT22 SDA\nconst int TOPRAK_PIN = 32;  // toprak nem sensörü AO (ADC1: Wi-Fi açıkken çalışır)\nconst int ROLE_PIN = 26;    // röle modülü IN\n\n// Toprak sensörü ayarı: sensör havadayken ve sudayken seri ekrandaki ham değeri yaz.\nconst int KURU_HAM = 3500;   // havada (kuru) okunan değer\nconst int ISLAK_HAM = 1500;  // suda (ıslak) okunan değer\nconst int KURU_YUZDE = 30;   // toprak nemi bunun altına inince sula\n\nconst unsigned long OLCUM_ARALIGI_MS = 2000;      // sensörleri 2 saniyede bir oku\nconst unsigned long SULAMA_MS = 5000;             // pompa çalışma süresi\nconst unsigned long EN_AZ_ARALIK_MS = 60000UL;    // iki otomatik sulama arası en az 1 dakika\n\n// Çoğu röle modülü LOW ile çeker. Seninki HIGH ile çekiyorsa bu iki satırı değiştir.\nconst int ROLE_ACIK = LOW;\nconst int ROLE_KAPALI = HIGH;\n\nAdafruit_SSD1306 ekran(128, 64, &Wire, -1);\nDHT dht(DHT_PIN, DHT22);\nWebServer sunucu(80);\n\nfloat sicaklik = NAN;\nfloat havaNemi = NAN;\nint toprakNemi = 0;           // yüzde\nbool pompaCalisiyor = false;\nunsigned long pompaBaslangic = 0;\nunsigned long sonSulama = 0;\nbool hicSulanmadi = true;\nunsigned long sonOlcum = 0;\n\nvoid pompaAc() {\n  if (pompaCalisiyor) return;\n  pompaCalisiyor = true;\n  pompaBaslangic = millis();\n  digitalWrite(ROLE_PIN, ROLE_ACIK);\n  Serial.println(\"Pompa calisiyor.\");\n}\n\nvoid pompaKapat() {\n  pompaCalisiyor = false;\n  sonSulama = millis();\n  hicSulanmadi = false;\n  digitalWrite(ROLE_PIN, ROLE_KAPALI);\n  Serial.println(\"Pompa durdu.\");\n}\n\nvoid olc() {\n  sicaklik = dht.readTemperature();\n  havaNemi = dht.readHumidity();\n  int ham = analogRead(TOPRAK_PIN);\n  toprakNemi = constrain(map(ham, KURU_HAM, ISLAK_HAM, 0, 100), 0, 100);\n  Serial.printf(\"Sicaklik: %.1f C  Nem: %.0f %%  Toprak ham: %d  Toprak: %d %%\\n\", sicaklik, havaNemi, ham, toprakNemi);\n}\n\nvoid ekranCiz() {\n  ekran.clearDisplay();\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  ekran.println(\"Akilli sera\");\n  ekran.setCursor(0, 14);\n  ekran.printf(\"Sicaklik: %.1f C\\n\", sicaklik);\n  ekran.setCursor(0, 26);\n  ekran.printf(\"Hava nemi: %.0f %%\\n\", havaNemi);\n  ekran.setCursor(0, 38);\n  ekran.printf(\"Toprak: %d %%\\n\", toprakNemi);\n  ekran.setCursor(0, 50);\n  if (pompaCalisiyor) ekran.println(\"POMPA CALISIYOR\");\n  else ekran.println(WiFi.localIP().toString());\n  ekran.display();\n}\n\nString sayfa() {\n  String s = \"<!doctype html><html><head><meta charset='utf-8'>\";\n  s += \"<meta name='viewport' content='width=device-width,initial-scale=1'>\";\n  s += \"<meta http-equiv='refresh' content='5'><title>Akıllı sera</title>\";\n  s += \"<style>body{font-family:sans-serif;text-align:center;padding:16px}\";\n  s += \"td{padding:6px 12px;font-size:18px}table{margin:auto}\";\n  s += \"a{display:inline-block;margin-top:16px;padding:14px 32px;border-radius:10px;background:#0e8a8a;color:#fff;text-decoration:none;font-size:20px}</style>\";\n  s += \"</head><body><h1>Akıllı sera</h1><table>\";\n  s += \"<tr><td>Sıcaklık</td><td><b>\" + String(sicaklik, 1) + \" °C</b></td></tr>\";\n  s += \"<tr><td>Hava nemi</td><td><b>\" + String(havaNemi, 0) + \" %</b></td></tr>\";\n  s += \"<tr><td>Toprak nemi</td><td><b>\" + String(toprakNemi) + \" %</b></td></tr>\";\n  s += \"<tr><td>Pompa</td><td><b>\";\n  s += pompaCalisiyor ? \"ÇALIŞIYOR\" : \"duruyor\";\n  s += \"</b></td></tr></table><a href='/sula'>Sula</a>\";\n  s += \"<p>Sayfa 5 saniyede bir yenilenir.</p></body></html>\";\n  return s;\n}\n\nvoid anaSayfa() {\n  sunucu.send(200, \"text/html\", sayfa());\n}\n\nvoid elleSula() {\n  pompaAc();  // elle sulamada bekleme süresine bakılmaz\n  sunucu.sendHeader(\"Location\", \"/\");\n  sunucu.send(303);\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(ROLE_PIN, OUTPUT);\n  digitalWrite(ROLE_PIN, ROLE_KAPALI);\n  dht.begin();\n  Wire.begin(21, 22);\n  ekran.begin(SSD1306_SWITCHCAPVCC, 0x3C);\n  ekran.setTextColor(SSD1306_WHITE);\n  ekran.clearDisplay();\n  ekran.setCursor(0, 0);\n  ekran.println(\"Wi-Fi baglaniyor...\");\n  ekran.display();\n\n  WiFi.mode(WIFI_STA);\n  WiFi.begin(AG_ADI, PAROLA);\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  Serial.print(\"Tarayicida ac: http://\");\n  Serial.println(WiFi.localIP());\n\n  sunucu.on(\"/\", anaSayfa);\n  sunucu.on(\"/sula\", elleSula);\n  sunucu.begin();\n}\n\nvoid loop() {\n  sunucu.handleClient();\n\n  if (millis() - sonOlcum >= OLCUM_ARALIGI_MS) {\n    sonOlcum = millis();\n    olc();\n    bool beklemeBitti = hicSulanmadi || millis() - sonSulama > EN_AZ_ARALIK_MS;\n    if (!pompaCalisiyor && toprakNemi < KURU_YUZDE && beklemeBitti) {\n      Serial.println(\"Toprak kuru: otomatik sulama.\");\n      pompaAc();\n    }\n    ekranCiz();\n  }\n\n  if (pompaCalisiyor && millis() - pompaBaslangic >= SULAMA_MS) {\n    pompaKapat();\n    ekranCiz();\n  }\n  delay(10);\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "Pompayı ve hortumu takmadan önce elektronik kısmı kur ve test et.",
+    "5 V kaynağın + ve − uçlarını breadboard'un ayrı bir güç hattına al. Kaynağın GND'sini ESP32'nin GND'sine bağla.",
+    "Pompa kablolarını röle modülünün COM ve NO vidalarına sık.",
+    "Toprak sensörünü havada ve bir bardak suda dene. Seri ekrandaki ham değerleri KURU_HAM ve ISLAK_HAM satırlarına yaz.",
+    "Sensörü toprağa yalnız çizgisine kadar göm. ESP32'yi ve röleyi sudan uzak bir kutuya koy."
+  ],
+  "testler": [
+    "Açılışta OLED \"Wi-Fi baglaniyor...\" yazar, sonra değerleri ve IP adresini gösterir.",
+    "DHT22'ye elini yaklaştır: sıcaklık ve nem birkaç saniyede değişir.",
+    "Sensör havadayken röle \"tık\" diye çeker, pompa 5 saniye çalışır, ekranda \"POMPA CALISIYOR\" yazar.",
+    "Sensör sudayken pompa çalışmaz.",
+    "Telefonla IP adresini aç: sayfa değerleri gösterir. \"Sula\"ya bas: pompa 5 saniye çalışır."
+  ],
+  "tanitim": {
+    "amac": "Küçük bir sera ya da saksı için bakım istasyonu. ESP32 havayı ve toprağı ölçer, toprak kuruyunca pompayı kendisi çalıştırır. Değerleri hem ekrandan hem telefondan görürsün; istersen telefondan elle sularsın.",
+    "nasil": [
+      "DHT22 sıcaklık ve hava nemini, toprak sensörü topraktaki suyu ölçer.",
+      "ESP32 değerleri 2 saniyede bir okur ve OLED ekrana yazar.",
+      "Toprak nemi %30'un altına inerse röle çeker; pompa 5 saniye su basar.",
+      "İki otomatik sulama arasında en az 1 dakika beklenir; toprak suyu emsin diye.",
+      "ESP32 web sayfası açar; \"Sula\" düğmesi pompayı elle çalıştırır."
+    ],
+    "ogrenilenler": [
+      "Röle ile pompa",
+      "Ayrı güç ve ortak GND",
+      "Web sunucusu",
+      "millis() ile zamanlama"
+    ],
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "Wi-Fi'ye bağlanıyor. Toprak nemli (%70): pompa çalışmaz.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "toprak",
+          "deger": 70
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Seranın içi ısındı: ekranda 31 °C görünür.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 31
+        }
+      },
+      {
+        "sure": 8000,
+        "yazi": "Toprak kurudu (%15): röle çeker, pompa 5 saniye su verir.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "toprak",
+          "deger": 15
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Toprak nemlendi (%65): pompa durur ve bekler.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "toprak",
+          "deger": 65
+        }
+      },
+      {
+        "sure": 6500,
+        "yazi": "Telefondaki sayfada \"Sula\"ya basıldı: pompa 5 saniye çalışır.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/sula"
+        }
+      }
+    ]
+  }
+}

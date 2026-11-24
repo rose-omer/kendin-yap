@@ -1,0 +1,66 @@
+{
+  "surum": 1,
+  "id": "uno-ntc-termometre",
+  "baslik": "NTC termometre (Uno)",
+  "ozet": "NTC sensörüyle sıcaklığı ölçer, seri ekrana yazar. Sıcaklık eşiği geçince LED yanar.",
+  "zorluk": "Kolay",
+  "sure": "40 dakika",
+  "gereksinimler": [
+    "Seri ekran (9600) her saniye sıcaklığı °C olarak yazar.",
+    "Sıcaklık 30 °C'nin üstüne çıkınca LED yanar.",
+    "Sıcaklık 30 °C'ye ya da altına inince LED söner.",
+    "Oda sıcaklığında (25 °C) ölçüm 25 °C'ye yakındır."
+  ],
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "left": 0, "top": 200, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "left": 100, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-resistor", "id": "r1", "left": 92, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-ntc-temperature-sensor", "id": "ntc", "left": 20, "top": 446, "attrs": {} }
+  ],
+  "connections": [
+    ["ntc:GND", "uno:GND.2", "black", [], "Modülde GND yazar."],
+    ["ntc:VCC", "uno:5V", "red", [], "Modülde VCC yazar."],
+    ["led1:C", "uno:GND.1", "black", [], "LED'in kısa bacağı GND'ye."],
+    ["ntc:OUT", "uno:A0", "yellow", [], "OUT: analog çıkış."],
+    ["led1:A", "r1:1", "orange", [], "LED'in uzun bacağı dirence."],
+    ["r1:2", "uno:13", "green", []]
+  ],
+  "kod": {
+    "dosya": "uno-ntc-termometre.ino",
+    "kutuphaneler": [],
+    "icerik": "// NTC termometre: sıcaklığı Beta formülüyle hesaplar, eşiği geçince LED yakar.\n// Modülde NTC ile 10 kΩ sabit direnç gerilim bölücü kurar; OUT bölücünün ortasıdır.\n#include <math.h>\n\nconst int NTC_PIN = A0;\nconst int LED_PIN = 13;\nconst float BETA = 3950.0;        // NTC'nin Beta katsayısı (satıcının verisine bak)\nconst float T0 = 298.15;          // 25 °C, kelvin cinsinden; NTC bu sıcaklıkta 10 kΩ'dur\nconst float ESIK_C = 30.0;        // bu sıcaklığın üstünde LED yanar\nconst unsigned long BEKLE_MS = 1000;  // iki ölçüm arası bekleme\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n  int deger = analogRead(NTC_PIN);   // 0-1023\n  deger = constrain(deger, 1, 1022); // 0 ve 1023'te formül sıfıra böler\n\n  // Bölücüden NTC direncinin 10 kΩ'a oranını bul.\n  float oran = deger / (1023.0 - deger);\n  // Beta formülü: 1/T = 1/T0 + ln(R/R0) / B  (T kelvin)\n  float kelvin = 1.0 / (1.0 / T0 + log(oran) / BETA);\n  float sicaklik = kelvin - 273.15;\n\n  bool sicak = sicaklik > ESIK_C;\n  digitalWrite(LED_PIN, sicak ? HIGH : LOW);\n\n  Serial.print(\"Sicaklik: \");\n  Serial.print(sicaklik, 1);\n  Serial.print(\" C  LED: \");\n  Serial.println(sicak ? \"acik\" : \"kapali\");\n  delay(BEKLE_MS);\n}\n"
+  },
+  "montaj": [
+    "NTC modülünü ölçmek istediğin yere koy; ucunu sıcak yüzeye değdirme.",
+    "LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Seri ekranı (9600) aç: oda sıcaklığına yakın bir değer yazıyor.",
+    "Simülasyonda sıcaklığı 40 °C'ye çek: LED yanıyor.",
+    "Sıcaklığı 20 °C'ye çek: LED sönüyor.",
+    "Gerçek devrede sensörü parmağınla tut: değer birkaç derece yükseliyor."
+  ],
+  "tanitim": {
+    "amac": "Ortam sıcaklığını ölçen basit bir termometre. Sıcaklık eşiği geçince uyarı LED'i yanar. Sera, akvaryum ya da bilgisayar kasası takibi için kullanılır.",
+    "nasil": [
+      "NTC ısındıkça direnci azalır; modülün OUT gerilimi değişir.",
+      "Arduino bu gerilimi A0'dan 0–1023 arası sayı olarak okur.",
+      "Beta formülü sayıyı °C'ye çevirir.",
+      "Sıcaklık 30 °C'yi geçerse 13. pindeki LED yanar."
+    ],
+    "ogrenilenler": [
+      "Analog okuma",
+      "Beta formülü",
+      "float hesap",
+      "Eşik değeri"
+    ],
+    "demo": [
+      { "sure": 2500, "yazi": "Oda sıcaklığı (22 °C): LED sönük.", "eylem": { "tur": "ayarla", "anahtar": "ntc", "deger": 22 } },
+      { "sure": 2500, "yazi": "Isınıyor (28 °C): eşik altında, LED sönük.", "eylem": { "tur": "ayarla", "anahtar": "ntc", "deger": 28 } },
+      { "sure": 2500, "yazi": "Sıcak (35 °C): eşik geçti, LED yanar.", "eylem": { "tur": "ayarla", "anahtar": "ntc", "deger": 35 } },
+      { "sure": 2500, "yazi": "Çok sıcak (45 °C): LED yanık kalır.", "eylem": { "tur": "ayarla", "anahtar": "ntc", "deger": 45 } },
+      { "sure": 2500, "yazi": "Soğudu (20 °C): LED söner.", "eylem": { "tur": "ayarla", "anahtar": "ntc", "deger": 20 } }
+    ]
+  }
+}

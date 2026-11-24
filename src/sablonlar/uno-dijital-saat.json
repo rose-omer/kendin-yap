@@ -1,0 +1,225 @@
+{
+  "surum": 1,
+  "id": "uno-dijital-saat",
+  "baslik": "Dijital saat (RTC)",
+  "ozet": "DS1307 saat modülü zamanı tutar; 16x2 LCD tarihi ve saati gösterir.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Üst satır tarihi ve günü gösterir (ör. 24.11.2026  Sal).",
+    "Alt satır saati saniyesiyle gösterir.",
+    "Saat her saniye yenilenir.",
+    "Pil takılıyken elektrik gidip gelince saat doğru devam eder.",
+    "Saat durmuşsa (ilk açılış) kod onu derlendiği ana ayarlar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 20,
+      "top": 240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "left": 0,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "left": -140,
+      "top": 100,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rArka",
+      "left": 345,
+      "top": 160,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-ds1307",
+      "id": "rtc",
+      "left": 350,
+      "top": 300,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "lcd:VSS",
+      "uno:GND.1",
+      "black",
+      [],
+      "LCD'nin 1. pini (VSS)."
+    ],
+    [
+      "lcd:VDD",
+      "uno:5V",
+      "red",
+      [],
+      "LCD'nin 2. pini (VDD)."
+    ],
+    [
+      "lcd:RW",
+      "uno:GND.1",
+      "black",
+      [],
+      "5. pin (RW) GND'de: LCD yalnız yazı alır."
+    ],
+    [
+      "lcd:K",
+      "uno:GND.1",
+      "black",
+      [],
+      "16. pin (K): arka ışığın eksisi."
+    ],
+    [
+      "pot:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pot:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "pot:SIG",
+      "lcd:V0",
+      "yellow",
+      [],
+      "Potun orta bacağı LCD'nin 3. pinine (V0): kontrast."
+    ],
+    [
+      "lcd:A",
+      "rArka:1",
+      "orange",
+      [],
+      "15. pin (A): arka ışığın artısı."
+    ],
+    [
+      "rArka:2",
+      "uno:5V",
+      "red",
+      [],
+      "220 Ω arka ışığın akımını sınırlar."
+    ],
+    [
+      "rtc:GND",
+      "uno:GND.3",
+      "black",
+      []
+    ],
+    [
+      "rtc:5V",
+      "uno:5V",
+      "red",
+      [],
+      "Modülde VCC yazabilir."
+    ],
+    [
+      "lcd:RS",
+      "uno:12",
+      "blue",
+      [],
+      "4. pin (RS)."
+    ],
+    [
+      "lcd:E",
+      "uno:11",
+      "purple",
+      [],
+      "6. pin (E)."
+    ],
+    [
+      "lcd:D4",
+      "uno:5",
+      "green",
+      [],
+      "11. pin (D4). D0–D3 (7–10. pinler) boş kalır."
+    ],
+    [
+      "lcd:D5",
+      "uno:4",
+      "green",
+      [],
+      "12. pin (D5)."
+    ],
+    [
+      "lcd:D6",
+      "uno:3",
+      "green",
+      [],
+      "13. pin (D6)."
+    ],
+    [
+      "lcd:D7",
+      "uno:2",
+      "green",
+      [],
+      "14. pin (D7)."
+    ],
+    [
+      "rtc:SDA",
+      "uno:A4",
+      "blue",
+      [],
+      "Uno'da I2C SDA = A4."
+    ],
+    [
+      "rtc:SCL",
+      "uno:A5",
+      "yellow",
+      [],
+      "Uno'da I2C SCL = A5. SQW boş kalır."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-dijital-saat.ino",
+    "kutuphaneler": [
+      "RTClib"
+    ],
+    "icerik": "// Dijital saat: DS1307 zamanı tutar, 16x2 LCD tarih ve saati gösterir.\n#include <LiquidCrystal.h>\n#include <RTClib.h>\n\nconst int LCD_RS = 12;\nconst int LCD_E = 11;\nconst int LCD_D4 = 5;\nconst int LCD_D5 = 4;\nconst int LCD_D6 = 3;\nconst int LCD_D7 = 2;\n\nLiquidCrystal lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7);\nRTC_DS1307 rtc;\n\n// LCD Türkçe harf gösteremez; gün adları ASCII.\nconst char GUNLER[7][4] = {\"Paz\", \"Pzt\", \"Sal\", \"Car\", \"Per\", \"Cum\", \"Cmt\"};\nint sonSaniye = -1;\n\n// Tek haneli sayının önüne 0 koyar (ör. 7 -> 07).\nvoid ikiHane(int sayi) {\n  if (sayi < 10) lcd.print('0');\n  lcd.print(sayi);\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  lcd.begin(16, 2);\n\n  if (!rtc.begin()) {\n    lcd.print(\"RTC bulunamadi\");\n    Serial.println(\"DS1307 bulunamadi. SDA=A4, SCL=A5 kablolarini kontrol et.\");\n    while (true) delay(1000);\n  }\n  if (!rtc.isrunning()) {\n    // Saat durmuşsa (ilk açılış, pil bitmiş) derleme zamanına ayarla.\n    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));\n    Serial.println(\"Saat derleme zamanina ayarlandi.\");\n  }\n}\n\nvoid loop() {\n  DateTime simdi = rtc.now();\n  if (simdi.second() == sonSaniye) {\n    delay(50);\n    return;\n  }\n  sonSaniye = simdi.second();\n\n  // Üst satır: 24.11.2026  Sal\n  lcd.setCursor(0, 0);\n  ikiHane(simdi.day());\n  lcd.print('.');\n  ikiHane(simdi.month());\n  lcd.print('.');\n  lcd.print(simdi.year());\n  lcd.print(\"  \");\n  lcd.print(GUNLER[simdi.dayOfTheWeek()]);\n\n  // Alt satır: ortada 14:05:09\n  lcd.setCursor(4, 1);\n  ikiHane(simdi.hour());\n  lcd.print(':');\n  ikiHane(simdi.minute());\n  lcd.print(':');\n  ikiHane(simdi.second());\n\n  char yazi[20];\n  sprintf(yazi, \"%02d.%02d.%04d %02d:%02d:%02d\", simdi.day(), simdi.month(), simdi.year(),\n          simdi.hour(), simdi.minute(), simdi.second());\n  Serial.println(yazi);\n}\n"
+  },
+  "montaj": [
+    "DS1307 modülüne CR2032 pil tak. Pil yoksa elektrik gidince saat sıfırlanır.",
+    "LCD'yi breadboard'a tak. Potansiyometreyi ve 220 Ω arka ışık direncini yanına koy.",
+    "DS1307'nin SDA'sı A4'e, SCL'si A5'e gider. Uno'da I2C bu pinlerdedir.",
+    "Kabloları sırayla tak.",
+    "Kodu yükle. Saat derleme anına ayarlanır; yükleme süresi kadar (birkaç saniye) geri kalabilir.",
+    "Saati yeniden ayarlamak için USB'yi ve pili 10 saniye çıkar, pili geri tak, kodu yeniden yükle.",
+    "LCD'de yazı görünmezse potansiyometreyi çevir."
+  ],
+  "testler": [
+    "LCD tarihi ve saati gösterir; saniye her saniye artar.",
+    "Saati telefonundaki saatle karşılaştır: fark birkaç saniyedir.",
+    "USB'yi 1 dakika çıkar ve geri tak: saat doğru devam eder.",
+    "Modülün SDA kablosunu çıkarıp kartı yeniden başlat: LCD \"RTC bulunamadi\" yazar.",
+    "Seri Port Ekranı (9600) her saniye tarih ve saati yazar."
+  ],
+  "tanitim": {
+    "amac": "Elektrik gitse de zamanı unutmayan masa saati. DS1307 modülü saati kendi pilinden tutar; Arduino yalnız okur ve LCD'ye yazar. Zamanlayıcı, alarm ve kayıt tutan projelerin temelidir.",
+    "nasil": [
+      "DS1307 saati ve tarihi sayar; küçük pil onu elektrik yokken çalıştırır.",
+      "Arduino saati I2C ile okur (A4 = SDA, A5 = SCL).",
+      "Saat durmuşsa kod onu derleme zamanına ayarlar.",
+      "LCD üst satırda tarihi, alt satırda saati gösterir."
+    ],
+    "ogrenilenler": [
+      "I2C haberleşme",
+      "RTC (gerçek zaman saati)",
+      "RTClib",
+      "İki haneli sayı yazma"
+    ],
+    "demo": []
+  }
+}

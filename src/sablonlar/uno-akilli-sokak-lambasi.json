@@ -1,0 +1,197 @@
+{
+  "surum": 1,
+  "id": "uno-akilli-sokak-lambasi",
+  "baslik": "Akıllı sokak lambası (Uno)",
+  "ozet": "Gece lamba kısık yanar; biri geçince 10 saniye tam parlar. Gündüz lamba kapalıdır.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "Gündüz lamba kapalıdır; hareket olsa da yanmaz.",
+    "Gece lamba kısık yanar.",
+    "Gece hareket olunca lamba tam parlar; son hareketten 10 saniye sonra yeniden kısılır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr",
+      "left": -240,
+      "top": 240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir",
+      "left": 200,
+      "top": 30,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "lamba",
+      "left": 90,
+      "top": 30,
+      "attrs": {
+        "color": "white"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 82,
+      "top": 110,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "ldr:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "ldr:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "pir:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pir:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "lamba:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "ldr:AO",
+      "uno:A0",
+      "yellow",
+      [],
+      "AO: analog çıkış."
+    ],
+    [
+      "pir:OUT",
+      "uno:2",
+      "orange",
+      []
+    ],
+    [
+      "lamba:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "green",
+      [],
+      "9. pin PWM verir; parlaklık ayarlanır."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-akilli-sokak-lambasi.ino",
+    "kutuphaneler": [],
+    "icerik": "// Akıllı sokak lambası: gece kısık yanar, hareket olunca bir süre tam parlar.\nconst int ISIK_PIN = A0;   // LDR modülü AO (karanlıkta değer yükselir)\nconst int PIR_PIN = 2;     // PIR OUT\nconst int LAMBA_PIN = 9;   // PWM pini\n\nconst int GECE_ESIK = 700;                  // karanlık değeri bunu aşınca gece\nconst int KISIK = 40;                       // gece bekleme parlaklığı (0-255)\nconst int TAM = 255;                        // hareket olunca parlaklık\nconst unsigned long TAM_SURE_MS = 10000;    // son hareketten sonra tam parlak kalma süresi\n\nbool hareketGoruldu = false;\nunsigned long sonHareket = 0;\nint sonParlaklik = -1;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(PIR_PIN, INPUT);\n  pinMode(LAMBA_PIN, OUTPUT);\n  Serial.println(\"Hazir. Gercek PIR icin 30 saniye isinma gerekir.\");\n}\n\nvoid loop() {\n  int karanlik = analogRead(ISIK_PIN);  // 0-1023\n  bool gece = karanlik > GECE_ESIK;\n\n  // Hareketi yalnız gece say; gündüz geçen biri lambayı yakmaz.\n  if (gece && digitalRead(PIR_PIN) == HIGH) {\n    hareketGoruldu = true;\n    sonHareket = millis();\n  }\n  bool tamParlak = hareketGoruldu && millis() - sonHareket < TAM_SURE_MS;\n\n  int parlaklik = 0;\n  if (gece) parlaklik = tamParlak ? TAM : KISIK;\n  analogWrite(LAMBA_PIN, parlaklik);\n\n  // Yalnız durum değişince yaz.\n  if (parlaklik != sonParlaklik) {\n    sonParlaklik = parlaklik;\n    Serial.print(\"Karanlik: \");\n    Serial.print(karanlik);\n    Serial.print(\"  Lamba: \");\n    if (parlaklik == 0) Serial.println(\"KAPALI\");\n    else if (parlaklik == TAM) Serial.println(\"TAM\");\n    else Serial.println(\"KISIK\");\n  }\n  delay(100);\n}\n"
+  },
+  "montaj": [
+    "LDR modülünü gökyüzünü görecek, lambanın ışığı vurmayacak bir yere koy.",
+    "PIR sensörünü yola bakacak biçimde koy; ayar vidalarını ortada bırak.",
+    "LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Aydınlıkta lamba kapalı; PIR'ın önünde el sallasan da yanmıyor.",
+    "LDR'yi elinle kapat: lamba kısık yanıyor.",
+    "LDR kapalıyken PIR'ın önünde el salla: lamba tam parlıyor.",
+    "Hareket bitince yaklaşık 10 saniye sonra lamba yeniden kısılıyor.",
+    "Simülasyonda PIR 3 saniye hareket verir; lamba bu yüzden yaklaşık 13 saniye tam parlak kalır."
+  ],
+  "tanitim": {
+    "amac": "Gece hep kısık yanan, biri geçince tam parlayan sokak lambası. Enerji tasarrufu sağlar. Bahçe yolu, apartman girişi ve otopark için kullanılır.",
+    "nasil": [
+      "LDR modülü ortam ışığını ölçer; Arduino A0'dan okur.",
+      "Aydınlıkta lamba kapalıdır.",
+      "Karanlıkta lamba 9. pinden (PWM) kısık yanar.",
+      "Gece PIR hareket görünce lamba tam parlar; son hareketten 10 saniye sonra kısılır."
+    ],
+    "ogrenilenler": [
+      "analogWrite (PWM)",
+      "PIR sensörü",
+      "İki sensörü birleştirme",
+      "millis() ile süre"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Gündüz (%80 ışık): lamba kapalı.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ldr",
+          "deger": 80
+        }
+      },
+      {
+        "sure": 4000,
+        "yazi": "Gündüz biri geçti: lamba yine yanmaz.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "pir"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Gece oldu (%10 ışık): lamba kısık yanar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ldr",
+          "deger": 10
+        }
+      },
+      {
+        "sure": 5000,
+        "yazi": "Gece biri geçti: lamba tam parlar.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "pir"
+        }
+      },
+      {
+        "sure": 9000,
+        "yazi": "Hareket bitti: 10 saniye dolunca lamba yeniden kısılır."
+      },
+      {
+        "sure": 3000,
+        "yazi": "Sabah oldu (%80 ışık): lamba söner.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ldr",
+          "deger": 80
+        }
+      }
+    ]
+  }
+}

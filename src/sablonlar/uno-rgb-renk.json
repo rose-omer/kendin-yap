@@ -1,0 +1,83 @@
+{
+  "surum": 1,
+  "id": "uno-rgb-renk",
+  "baslik": "RGB renk karıştırma (Uno)",
+  "ozet": "Üç düğme kırmızı, yeşil ve mavi ışığı ayarlar; RGB LED karışık rengi gösterir.",
+  "zorluk": "Kolay",
+  "sure": "40 dakika",
+  "gereksinimler": [
+    "Her düğme bir rengin parlaklığını ayarlar.",
+    "Kırmızı ve yeşil birlikte açıkken LED sarı yanar.",
+    "Üç düğme de en sağdayken LED beyaza yakın yanar.",
+    "Seri ekran (9600) üç rengin değerini yazar."
+  ],
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "left": 0, "top": 200, "attrs": {} },
+    { "type": "wokwi-rgb-led", "id": "rgb", "left": 170, "top": -40, "attrs": { "common": "cathode" } },
+    { "type": "wokwi-resistor", "id": "r1", "left": 168, "top": 110, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "left": 226, "top": 110, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r3", "left": 284, "top": 110, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-potentiometer", "id": "kirmizi", "left": -17, "top": 446, "rotate": 180, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "yesil", "left": 99, "top": 446, "rotate": 180, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "mavi", "left": 215, "top": 446, "rotate": 180, "attrs": {} }
+  ],
+  "connections": [
+    ["rgb:COM", "uno:GND.1", "black", [], "Ortak katot: en uzun bacak GND'ye."],
+    ["kirmizi:GND", "uno:GND.2", "black", []],
+    ["yesil:GND", "uno:GND.2", "black", []],
+    ["mavi:GND", "uno:GND.3", "black", []],
+    ["kirmizi:VCC", "uno:5V", "red", []],
+    ["yesil:VCC", "uno:5V", "red", []],
+    ["mavi:VCC", "uno:5V", "red", []],
+    ["kirmizi:SIG", "uno:A0", "yellow", [], "Kırmızı düğmenin orta bacağı."],
+    ["yesil:SIG", "uno:A1", "yellow", [], "Yeşil düğmenin orta bacağı."],
+    ["mavi:SIG", "uno:A2", "yellow", [], "Mavi düğmenin orta bacağı."],
+    ["rgb:R", "r1:1", "orange", [], "Kırmızı bacak dirence."],
+    ["r1:2", "uno:6", "green", [], "6. pin PWM verir (~)."],
+    ["rgb:G", "r2:1", "orange", [], "Yeşil bacak dirence."],
+    ["r2:2", "uno:5", "green", [], "5. pin PWM verir (~)."],
+    ["rgb:B", "r3:1", "orange", [], "Mavi bacak dirence."],
+    ["r3:2", "uno:3", "green", [], "3. pin PWM verir (~)."]
+  ],
+  "kod": {
+    "dosya": "uno-rgb-renk.ino",
+    "kutuphaneler": [],
+    "icerik": "// RGB renk karıştırma: 3 potansiyometre kırmızı, yeşil ve mavinin parlaklığını ayarlar.\n// Ortak katotlu RGB LED: COM bacağı GND'de; renk pinine ne kadar PWM verilirse o renk o kadar parlar.\n// Ortak anotlu LED kullanırsan COM'u 5V'a bağla ve ORTAK_ANOT değerini true yap.\nconst bool ORTAK_ANOT = false;\n\nconst int KIRMIZI_POT = A0;\nconst int YESIL_POT = A1;\nconst int MAVI_POT = A2;\n\nconst int KIRMIZI_PIN = 6;  // PWM pinleri (kartta ~ işareti)\nconst int YESIL_PIN = 5;\nconst int MAVI_PIN = 3;\n\nconst int BEKLE_MS = 100;   // iki okuma arası bekleme\n\n// Potansiyometreyi okur, 0-255 parlaklığa çevirir, renk pinine yazar.\nint rengiAyarla(int potPin, int ledPin) {\n  int parlaklik = map(analogRead(potPin), 0, 1023, 0, 255);\n  analogWrite(ledPin, ORTAK_ANOT ? 255 - parlaklik : parlaklik);\n  return parlaklik;\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(KIRMIZI_PIN, OUTPUT);\n  pinMode(YESIL_PIN, OUTPUT);\n  pinMode(MAVI_PIN, OUTPUT);\n}\n\nvoid loop() {\n  int r = rengiAyarla(KIRMIZI_POT, KIRMIZI_PIN);\n  int g = rengiAyarla(YESIL_POT, YESIL_PIN);\n  int b = rengiAyarla(MAVI_POT, MAVI_PIN);\n\n  Serial.print(\"R: \");\n  Serial.print(r);\n  Serial.print(\"  G: \");\n  Serial.print(g);\n  Serial.print(\"  B: \");\n  Serial.println(b);\n  delay(BEKLE_MS);\n}\n"
+  },
+  "montaj": [
+    "RGB LED'in en uzun bacağı ortak bacaktır (COM). Bu LED ortak katotludur: COM GND'ye gider.",
+    "Kırmızı, yeşil ve mavi bacağa ayrı birer 220 Ω direnç bağla.",
+    "Uno'nun 5V ve GND pinlerini breadboard'un + ve − hatlarına al; üç potansiyometreyi bu hatlardan besle.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Yalnız kırmızı düğmeyi aç: LED kırmızı yanıyor.",
+    "Kırmızı ve yeşili aç: LED sarı yanıyor.",
+    "Üç düğmeyi de en sağa çevir: LED beyaza yakın yanıyor.",
+    "Üç düğmeyi de en sola çevir: LED sönüyor."
+  ],
+  "tanitim": {
+    "amac": "Üç ana ışık rengini karıştırıp istediğin rengi elde edersin. Ekranlar ve renkli LED şeritler renkleri böyle üretir. Oda ışığı ya da renkli gece lambası için kullanılır.",
+    "nasil": [
+      "Her potansiyometre bir rengin ayarıdır: A0 kırmızı, A1 yeşil, A2 mavi.",
+      "Arduino üç değeri okur ve 0–255 aralığına çevirir.",
+      "Her renk ayrı bir PWM pininden ve ayrı bir dirençten sürülür.",
+      "Gözümüz üç ışığı karışık tek bir renk olarak görür."
+    ],
+    "ogrenilenler": [
+      "RGB LED",
+      "analogWrite (PWM)",
+      "Renk karıştırma",
+      "Fonksiyon yazma"
+    ],
+    "demo": [
+      { "sure": 2000, "yazi": "Kırmızı açık: LED kırmızı.", "eylem": { "tur": "pot", "id": "kirmizi", "deger": 1023 } },
+      { "sure": 2000, "yazi": "Yeşil de açık: kırmızı + yeşil = sarı.", "eylem": { "tur": "pot", "id": "yesil", "deger": 1023 } },
+      { "sure": 2000, "yazi": "Kırmızı kapandı: yalnız yeşil.", "eylem": { "tur": "pot", "id": "kirmizi", "deger": 0 } },
+      { "sure": 2000, "yazi": "Mavi açık: yeşil + mavi = camgöbeği.", "eylem": { "tur": "pot", "id": "mavi", "deger": 1023 } },
+      { "sure": 2000, "yazi": "Yeşil kapandı: yalnız mavi.", "eylem": { "tur": "pot", "id": "yesil", "deger": 0 } },
+      { "sure": 2000, "yazi": "Kırmızı açık: kırmızı + mavi = mor.", "eylem": { "tur": "pot", "id": "kirmizi", "deger": 1023 } },
+      { "sure": 2500, "yazi": "Üçü de açık: beyaz.", "eylem": { "tur": "pot", "id": "yesil", "deger": 1023 } }
+    ]
+  }
+}

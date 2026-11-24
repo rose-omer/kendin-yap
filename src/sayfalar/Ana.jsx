@@ -162,7 +162,7 @@ export default function Ana() {
           <span className="cip-ayrac" aria-hidden="true" />
           {tumOzellikler.map((o) => <span key={o}>{cip('ozellik', o, o)}</span>)}
           <span className="cip-ayrac" aria-hidden="true" />
-          {['Çok kolay', 'Kolay', 'Orta'].map((z) => <span key={z}>{cip('zorluk', z, z)}</span>)}
+          {['Çok kolay', 'Kolay', 'Orta', 'İleri'].map((z) => <span key={z}>{cip('zorluk', z, z)}</span>)}
           {suzgecVar && <button type="button" className="dugme bag" onClick={() => setSuzgec({ kart: '', ozellik: '', zorluk: '', arama: '' })}>Süzgeci temizle</button>}
         </div>
       </section>

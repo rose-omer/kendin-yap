@@ -1,0 +1,189 @@
+{
+  "surum": 1,
+  "id": "esp32-bt-rgb",
+  "baslik": "Bluetooth RGB lamba",
+  "ozet": "Telefondan Bluetooth ile \"kirmizi\", \"yesil\", \"mavi\", \"kapat\" ya da \"255,120,0\" gibi bir renk yaz; RGB LED o renge döner.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Telefon \"KendinYap-RGB\" adlı cihaza Bluetooth ile bağlanır.",
+    "\"kirmizi\", \"yesil\", \"mavi\", \"beyaz\", \"sari\", \"mor\" komutları LED'i o renge çevirir.",
+    "\"kapat\" LED'i söndürür.",
+    "\"R,G,B\" biçimindeki üç sayı (0-255) istenen rengi verir.",
+    "ESP32 her komuttan sonra telefona \"Renk: R,G,B\" yazar; yanlış komutta komut listesini yollar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 170,
+      "top": 60,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "left": 170,
+      "top": 120,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "left": 170,
+      "top": 180,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "rgb",
+      "left": 330,
+      "top": 60,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "rgb:COM",
+      "esp:GND.1",
+      "black",
+      [],
+      "COM: en uzun bacak. Bu ortak katotlu (CC) LED içindir."
+    ],
+    [
+      "rgb:R",
+      "r1:2",
+      "orange",
+      [],
+      "R: kırmızı bacak."
+    ],
+    [
+      "r1:1",
+      "esp:D18",
+      "orange",
+      []
+    ],
+    [
+      "rgb:G",
+      "r2:2",
+      "green",
+      [],
+      "G: yeşil bacak."
+    ],
+    [
+      "r2:1",
+      "esp:D19",
+      "green",
+      []
+    ],
+    [
+      "rgb:B",
+      "r3:2",
+      "blue",
+      [],
+      "B: mavi bacak."
+    ],
+    [
+      "r3:1",
+      "esp:D21",
+      "blue",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-bt-rgb.ino",
+    "kutuphaneler": [],
+    "icerik": "// Bluetooth RGB LED: telefondan renk adı ya da \"R,G,B\" yaz, LED o renge döner.\n// Telefona \"Serial Bluetooth Terminal\" gibi bir uygulama kur ve KendinYap-RGB cihazına bağlan.\n// Not: ledcAttach için Arduino IDE'de ESP32 kart paketi 3.x gerekir.\n#include <BluetoothSerial.h>\n\nconst char* BT_ADI = \"KendinYap-RGB\";\nconst int KIRMIZI_PIN = 18;\nconst int YESIL_PIN = 19;\nconst int MAVI_PIN = 21;\nconst int PWM_FREKANS = 5000;   // Hz\nconst int PWM_COZUNURLUK = 8;   // 8 bit: 0-255\n\nBluetoothSerial SerialBT;\n\nvoid renkYap(int r, int g, int b) {\n  r = constrain(r, 0, 255);\n  g = constrain(g, 0, 255);\n  b = constrain(b, 0, 255);\n  ledcWrite(KIRMIZI_PIN, r);\n  ledcWrite(YESIL_PIN, g);\n  ledcWrite(MAVI_PIN, b);\n  SerialBT.printf(\"Renk: %d,%d,%d\\n\", r, g, b);\n  Serial.printf(\"Renk: %d,%d,%d\\n\", r, g, b);\n}\n\n// \"255,120,0\" biçimini çözer. Biçim yanlışsa false döner.\nbool sayilariCoz(const String& s, int& r, int& g, int& b) {\n  int v1 = s.indexOf(',');\n  int v2 = s.indexOf(',', v1 + 1);\n  if (v1 < 0 || v2 < 0) return false;\n  r = s.substring(0, v1).toInt();\n  g = s.substring(v1 + 1, v2).toInt();\n  b = s.substring(v2 + 1).toInt();\n  return true;\n}\n\nvoid komutIsle(String komut) {\n  komut.trim();\n  komut.toLowerCase();\n  if (komut.length() == 0) return;\n  Serial.println(\"Komut: \" + komut);\n  int r, g, b;\n  if (komut == \"kirmizi\") renkYap(255, 0, 0);\n  else if (komut == \"yesil\") renkYap(0, 255, 0);\n  else if (komut == \"mavi\") renkYap(0, 0, 255);\n  else if (komut == \"beyaz\") renkYap(255, 255, 255);\n  else if (komut == \"sari\") renkYap(255, 160, 0);\n  else if (komut == \"mor\") renkYap(160, 0, 255);\n  else if (komut == \"kapat\") renkYap(0, 0, 0);\n  else if (sayilariCoz(komut, r, g, b)) renkYap(r, g, b);\n  else SerialBT.println(\"Komutlar: kirmizi, yesil, mavi, beyaz, sari, mor, kapat ya da R,G,B (0-255)\");\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  ledcAttach(KIRMIZI_PIN, PWM_FREKANS, PWM_COZUNURLUK);\n  ledcAttach(YESIL_PIN, PWM_FREKANS, PWM_COZUNURLUK);\n  ledcAttach(MAVI_PIN, PWM_FREKANS, PWM_COZUNURLUK);\n  ledcWrite(KIRMIZI_PIN, 0);\n  ledcWrite(YESIL_PIN, 0);\n  ledcWrite(MAVI_PIN, 0);\n  SerialBT.begin(BT_ADI);\n  Serial.printf(\"Bluetooth hazir: %s\\n\", BT_ADI);\n}\n\nvoid loop() {\n  if (SerialBT.available()) komutIsle(SerialBT.readStringUntil('\\n'));\n  delay(20);\n}\n"
+  },
+  "montaj": [
+    "Ortak katotlu (CC) RGB LED al. En uzun bacak COM'dur; GND'ye gider.",
+    "Her renk bacağına ayrı 220 Ω direnç tak; tek dirençle renkler eşit yanmaz.",
+    "Ortak anotlu (CA) LED aldıysan COM'u 3V3'e bağla ve kodda her değeri 255'ten çıkar.",
+    "Telefona \"Serial Bluetooth Terminal\" uygulamasını kur. Telefonun Bluetooth ayarından \"KendinYap-RGB\" ile eşleş.",
+    "Uygulamada satır sonunu \"LF\" ya da \"CR+LF\" yap; ESP32 komutu satır sonuna göre ayırır."
+  ],
+  "testler": [
+    "Uygulamadan \"kirmizi\" yaz: LED kırmızı yanar, ekrana \"Renk: 255,0,0\" gelir.",
+    "\"yesil\" ve \"mavi\" yaz: LED o renklere döner.",
+    "\"255,120,0\" yaz: LED turuncu yanar.",
+    "\"kapat\" yaz: LED söner.",
+    "\"merhaba\" yaz: ESP32 komut listesini yollar."
+  ],
+  "tanitim": {
+    "amac": "Telefonla rengi değişen bir masa ya da gece lambası. ESP32 klasik Bluetooth ile telefondaki terminal uygulamasından komut alır. RGB LED'in üç rengi PWM ile karışır; milyonlarca renk çıkar.",
+    "nasil": [
+      "ESP32 \"KendinYap-RGB\" adıyla Bluetooth cihazı olur.",
+      "Telefon bağlanır ve bir komut yazar.",
+      "ESP32 komutu okur: renk adıysa hazır değeri, \"R,G,B\" ise sayıları alır.",
+      "Üç renk pinine PWM ile 0-255 arası parlaklık verir; renkler karışır."
+    ],
+    "ogrenilenler": [
+      "BluetoothSerial",
+      "PWM (ledcWrite)",
+      "Renk karıştırma",
+      "Yazı ayrıştırma"
+    ],
+    "demo": [
+      {
+        "sure": 2500,
+        "yazi": "Telefon Bluetooth ile bağlandı.",
+        "eylem": {
+          "tur": "btbaglan"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "\"kirmizi\" yazıldı: LED kırmızı yanar.",
+        "eylem": {
+          "tur": "bt",
+          "veri": "kirmizi"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "\"yesil\" yazıldı.",
+        "eylem": {
+          "tur": "bt",
+          "veri": "yesil"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "\"mavi\" yazıldı.",
+        "eylem": {
+          "tur": "bt",
+          "veri": "mavi"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "\"255,120,0\" yazıldı: kırmızı ve yeşil karışır, LED turuncu olur.",
+        "eylem": {
+          "tur": "bt",
+          "veri": "255,120,0"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "\"kapat\" yazıldı: LED söner.",
+        "eylem": {
+          "tur": "bt",
+          "veri": "kapat"
+        }
+      }
+    ]
+  }
+}

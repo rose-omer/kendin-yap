@@ -1,0 +1,81 @@
+{
+  "surum": 1,
+  "id": "uno-kara-simsek",
+  "baslik": "Kara şimşek (Uno)",
+  "ozet": "6 kırmızı LED'de bir ışık sağa, sonra sola kayar.",
+  "zorluk": "Çok kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Her an yalnız bir LED yanar.",
+    "Işık soldan sağa, sonra sağdan sola kayar.",
+    "Bir tur (sağa ve sola) yaklaşık 1 saniye sürer."
+  ],
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "left": 0, "top": 200, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "left": -83, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led2", "left": -3, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led3", "left": 77, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led4", "left": 157, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led5", "left": 237, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led6", "left": 317, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-resistor", "id": "r1", "left": -91, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "left": -11, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r3", "left": 69, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r4", "left": 149, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r5", "left": 229, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r6", "left": 309, "top": 115, "rotate": 90, "attrs": { "value": "220" } }
+  ],
+  "connections": [
+    ["led1:C", "uno:GND.1", "black", [], "LED'in kısa bacağı GND'ye."],
+    ["led2:C", "uno:GND.1", "black", []],
+    ["led3:C", "uno:GND.1", "black", []],
+    ["led4:C", "uno:GND.1", "black", []],
+    ["led5:C", "uno:GND.1", "black", []],
+    ["led6:C", "uno:GND.1", "black", []],
+    ["led1:A", "r1:1", "orange", [], "LED'in uzun bacağı dirence."],
+    ["r1:2", "uno:7", "green", []],
+    ["led2:A", "r2:1", "orange", []],
+    ["r2:2", "uno:6", "green", []],
+    ["led3:A", "r3:1", "orange", []],
+    ["r3:2", "uno:5", "green", []],
+    ["led4:A", "r4:1", "orange", []],
+    ["r4:2", "uno:4", "green", []],
+    ["led5:A", "r5:1", "orange", []],
+    ["r5:2", "uno:3", "green", []],
+    ["led6:A", "r6:1", "orange", []],
+    ["r6:2", "uno:2", "green", []]
+  ],
+  "kod": {
+    "dosya": "uno-kara-simsek.ino",
+    "kutuphaneler": [],
+    "icerik": "// Kara şimşek: ışık 6 LED'de sağa, sonra sola kayar.\nconst int LEDLER[] = {7, 6, 5, 4, 3, 2};  // soldan sağa LED pinleri\nconst int ADET = 6;                       // LED sayısı\nconst int BEKLE_MS = 100;                 // bir LED'in yanık kaldığı süre\n\n// i. LED'i kısa bir süre yakar, sonra söndürür.\nvoid yak(int i) {\n  digitalWrite(LEDLER[i], HIGH);\n  delay(BEKLE_MS);\n  digitalWrite(LEDLER[i], LOW);\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  for (int i = 0; i < ADET; i++) {\n    pinMode(LEDLER[i], OUTPUT);\n  }\n}\n\nvoid loop() {\n  Serial.println(\"Saga\");\n  for (int i = 0; i < ADET; i++) {      // soldan sağa\n    yak(i);\n  }\n  Serial.println(\"Sola\");\n  for (int i = ADET - 2; i > 0; i--) {  // sağdan sola; uçları iki kez yakma\n    yak(i);\n  }\n}\n"
+  },
+  "montaj": [
+    "6 LED'i breadboard'a yan yana diz.",
+    "Her LED'in uzun bacağına bir 220 Ω direnç bağla.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Simülasyonda ışık soldan sağa, sonra sağdan sola kayıyor.",
+    "Aynı anda yalnız bir LED yanıyor.",
+    "BEKLE_MS değerini 50 yap: ışık iki kat hızlı kayıyor."
+  ],
+  "tanitim": {
+    "amac": "Bir ışığın LED dizisinde ileri geri kaymasını sağlar. Eski bir dizideki akıllı arabanın ön ışığı gibi. Süs ışığı ya da sıra göstergesi için kullanılır.",
+    "nasil": [
+      "Her LED ayrı bir pine ve ayrı bir 220 Ω dirence bağlıdır.",
+      "Pin numaraları bir dizide sırayla durur.",
+      "Bir for döngüsü LED'leri soldan sağa tek tek yakar.",
+      "İkinci for döngüsü geri döner; tur tekrar başlar."
+    ],
+    "ogrenilenler": [
+      "Dizi (array)",
+      "for döngüsü",
+      "Fonksiyon yazma"
+    ],
+    "demo": [
+      { "sure": 3000, "yazi": "Işık soldan sağa, sonra sağdan sola kayar." },
+      { "sure": 3000, "yazi": "Her LED 100 ms yanar; bir tur 1 saniye sürer." }
+    ]
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "surum": 1,
+  "id": "uno-alkis-lamba",
+  "baslik": "Alkışla yanan lamba",
+  "ozet": "İki kez alkışla: LED yanar. Yine iki alkış: LED söner.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "1 saniye içinde iki alkış LED'i yakar ya da söndürür.",
+    "Tek alkış LED'i değiştirmez.",
+    "Bir alkışın yankısı ikinci alkış sayılmaz.",
+    "Seri Port Ekranı her alkışı ve lambanın durumunu yazar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-small-sound-sensor",
+      "id": "ses",
+      "left": 340,
+      "top": 120,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "ses:GND",
+      "uno:GND.1",
+      "black",
+      [],
+      "Modülde G yazar."
+    ],
+    [
+      "ses:VCC",
+      "uno:5V",
+      "red",
+      [],
+      "Modülde + yazar."
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "ses:DOUT",
+      "uno:2",
+      "yellow",
+      [],
+      "Modülde DO yazar. AO boş kalır."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "orange",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-alkis-lamba.ino",
+    "kutuphaneler": [],
+    "icerik": "// Alkışla yanan lamba: 1 sn içinde iki alkış LED'i yakar ya da söndürür.\nconst int SES_PIN = 2;\nconst int LED_PIN = 9;\nconst int SES_VAR = HIGH;                // Modülün DO'su ses varken HIGH olur. Tersse LOW yaz.\nconst unsigned long SESSIZLIK = 150;     // ms; bu kadar sessizlikten sonraki ses yeni alkıştır\nconst unsigned long ALKIS_ARASI = 1000;  // ms; ikinci alkış bu süre içinde gelmeli\n\nbool lamba = false;\nbyte alkisSayisi = 0;\nunsigned long sonSes = 0;     // en son ses duyulan an\nunsigned long ilkAlkis = 0;   // çiftin ilk alkışının anı\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(SES_PIN, INPUT);\n  pinMode(LED_PIN, OUTPUT);\n  Serial.println(\"Iki kez alkislayin.\");\n}\n\nvoid loop() {\n  unsigned long simdi = millis();\n\n  if (digitalRead(SES_PIN) == SES_VAR) {\n    // Sessizlikten sonra gelen ilk ses yeni bir alkıştır; yankı ve titreşim sayılmaz.\n    if (simdi - sonSes > SESSIZLIK) {\n      if (alkisSayisi == 1 && simdi - ilkAlkis <= ALKIS_ARASI) {\n        alkisSayisi = 0;\n        lamba = !lamba;\n        digitalWrite(LED_PIN, lamba);\n        Serial.println(lamba ? \"2. alkis: Lamba acik\" : \"2. alkis: Lamba kapali\");\n      } else {\n        alkisSayisi = 1;\n        ilkAlkis = simdi;\n        Serial.println(\"1. alkis\");\n      }\n    }\n    sonSes = simdi;\n  }\n\n  // İkinci alkış gecikirse sayımı sıfırla.\n  if (alkisSayisi == 1 && simdi - ilkAlkis > ALKIS_ARASI) {\n    alkisSayisi = 0;\n  }\n}\n"
+  },
+  "montaj": [
+    "Ses sensörü modülünü breadboard'a tak. Modülde AO, G, +, DO yazar (G = GND, + = VCC).",
+    "LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Kabloları sırayla tak.",
+    "Sessiz odada modülün DO ışığı sönük olmalı. Yanıyorsa modüldeki potansiyometreyi sönene kadar çevir.",
+    "Bir kez alkışla: DO ışığı kısa süre yanmalı. Yanmıyorsa potansiyometreyi az geri çevir."
+  ],
+  "testler": [
+    "İki kez hızlı alkışla: LED yanar; Seri Port Ekranı (9600) \"Lamba acik\" yazar.",
+    "Yine iki kez alkışla: LED söner.",
+    "Tek alkışla ve 2 saniye bekle: LED değişmez.",
+    "Konuşma ya da müzik LED'i değiştirmiyorsa hassasiyet doğrudur."
+  ],
+  "tanitim": {
+    "amac": "Işığı el çırparak açıp kapatan alkış anahtarı. Tek ses değil, iki hızlı alkış aranır; böylece kapı çarpması lambayı yakmaz. Gerçek lamba için LED yerine röle modülü gerekir; 220 V işini ustaya bırak.",
+    "nasil": [
+      "Ses sensörü yüksek seste DOUT çıkışını HIGH yapar.",
+      "Arduino sessizlikten sonraki ilk sesi bir alkış sayar; yankıyı yok sayar (debounce).",
+      "İlk alkıştan sonra 1 saniye içinde ikinci alkış gelirse LED durum değiştirir.",
+      "1 saniye geçerse sayım sıfırlanır."
+    ],
+    "ogrenilenler": [
+      "millis() ile zamanlama",
+      "Debounce",
+      "Durum değiştirme (toggle)"
+    ],
+    "demo": []
+  }
+}

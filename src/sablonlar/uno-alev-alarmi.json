@@ -1,0 +1,142 @@
+{
+  "surum": 1,
+  "id": "uno-alev-alarmi",
+  "baslik": "Alev alarmı",
+  "ozet": "Alev sensörü ateşi görünce buzzer öter, LED yanıp söner.",
+  "zorluk": "Çok kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Alev yokken buzzer susar, LED söner.",
+    "Alev görülünce buzzer kesik kesik öter, LED yanıp söner.",
+    "Alev kaybolunca alarm durur.",
+    "Seri Port Ekranı durum değişince \"ALEV VAR\" ya da \"Alev yok\" yazar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-flame-sensor",
+      "id": "alev",
+      "left": -240,
+      "top": 60,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 240,
+      "top": 40,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "alev:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "alev:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "bz1:1",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "alev:DOUT",
+      "uno:7",
+      "yellow",
+      [],
+      "Modülde DO yazar. Çoğu modülde alev görünce LOW olur. AO boş kalır."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "orange",
+      []
+    ],
+    [
+      "bz1:2",
+      "uno:8",
+      "green",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-alev-alarmi.ino",
+    "kutuphaneler": [],
+    "icerik": "// Alev alarmı: alev sensörü ateşi görünce buzzer öter, LED yanıp söner.\nconst int ALEV_PIN = 7;\nconst int BUZZER_PIN = 8;\nconst int LED_PIN = 9;\nconst int ALEV_VAR = LOW;  // Çoğu modül alev görünce LOW verir. Tersse HIGH yaz.\n\nbool oncekiAlev = false;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(ALEV_PIN, INPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  pinMode(LED_PIN, OUTPUT);\n  Serial.println(\"Alev yok\");\n}\n\nvoid loop() {\n  bool alev = digitalRead(ALEV_PIN) == ALEV_VAR;\n\n  // Yalnız durum değişince yaz.\n  if (alev != oncekiAlev) {\n    Serial.println(alev ? \"ALEV VAR!\" : \"Alev yok\");\n    oncekiAlev = alev;\n  }\n\n  if (alev) {\n    digitalWrite(LED_PIN, HIGH);\n    tone(BUZZER_PIN, 2500);\n    delay(150);\n    digitalWrite(LED_PIN, LOW);\n    noTone(BUZZER_PIN);\n    delay(150);\n  } else {\n    digitalWrite(LED_PIN, LOW);\n    noTone(BUZZER_PIN);\n    delay(50);\n  }\n}\n"
+  },
+  "montaj": [
+    "Alev sensörü modülünü breadboard'a tak. Modülde VCC, GND, DO, AO yazar; AO bu projede boş kalır.",
+    "LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Buzzer'ın uzun bacağı (+) 8. pine gider.",
+    "Kabloları sırayla tak.",
+    "Modüldeki mavi potansiyometre hassasiyeti ayarlar. Çakmak 20–30 cm uzakta yanarken modülün DO ışığı yanacak biçimde çevir.",
+    "Denemeyi ateşe dayanıklı bir yüzeyde ve bir yetişkinle yap."
+  ],
+  "testler": [
+    "Açılışta Seri Port Ekranı (9600) \"Alev yok\" yazar.",
+    "Çakmağı 20 cm uzakta yak: buzzer öter, LED yanıp söner.",
+    "Çakmağı söndür: alarm susar.",
+    "Alarm hiç çalmıyorsa ya da hep çalıyorsa modüldeki potansiyometreyi çevir. Yine olmazsa kodda ALEV_VAR'ı HIGH yap."
+  ],
+  "tanitim": {
+    "amac": "Mum, ocak ya da şömine yakınında ateşi sesle haber veren basit alarm. Sensör alevin yaydığı kızılötesi ışığı görür. İlk kez sensör ve buzzer kullananlar için uygundur.",
+    "nasil": [
+      "Sensör alevin kızılötesi ışığını algılar.",
+      "Işık eşiği geçince modülün DOUT çıkışı LOW olur.",
+      "Arduino bu pini okur; alev varsa buzzer'ı öttürür ve LED'i yakıp söndürür."
+    ],
+    "ogrenilenler": [
+      "digitalRead",
+      "Dijital sensör",
+      "tone ile ses"
+    ],
+    "demo": []
+  }
+}

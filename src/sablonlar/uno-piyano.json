@@ -1,0 +1,101 @@
+{
+  "surum": 1,
+  "id": "uno-piyano",
+  "baslik": "Mini piyano (Uno)",
+  "ozet": "4 buton 4 nota çalar: Do, Re, Mi, Fa. Çalan notanın LED'i yanar.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "Bir butona basılı tutunca buzzer o notayı çalar.",
+    "Basılı butonun LED'i yanar; öbür LED'ler söner.",
+    "Buton bırakılınca ses kesilir ve LED söner.",
+    "Seri ekran (9600) çalan notanın adını yazar."
+  ],
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "left": 0, "top": 200, "attrs": {} },
+    { "type": "wokwi-buzzer", "id": "bz1", "left": -210, "top": 100, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "left": -100, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led2", "left": -20, "top": 0, "attrs": { "color": "yellow" } },
+    { "type": "wokwi-led", "id": "led3", "left": 60, "top": 0, "attrs": { "color": "green" } },
+    { "type": "wokwi-led", "id": "led4", "left": 140, "top": 0, "attrs": { "color": "blue" } },
+    { "type": "wokwi-resistor", "id": "r1", "left": -108, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "left": -28, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r3", "left": 52, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r4", "left": 132, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-pushbutton", "id": "do", "left": 330, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-pushbutton", "id": "re", "left": 330, "top": 90, "attrs": { "color": "yellow" } },
+    { "type": "wokwi-pushbutton", "id": "mi", "left": 330, "top": 180, "attrs": { "color": "green" } },
+    { "type": "wokwi-pushbutton", "id": "fa", "left": 330, "top": 270, "attrs": { "color": "blue" } }
+  ],
+  "connections": [
+    ["bz1:1", "uno:GND.1", "black", [], "Buzzer'ın - bacağı."],
+    ["led1:C", "uno:GND.1", "black", [], "LED'in kısa bacağı GND'ye."],
+    ["led2:C", "uno:GND.1", "black", []],
+    ["led3:C", "uno:GND.1", "black", []],
+    ["led4:C", "uno:GND.1", "black", []],
+    ["do:2.l", "uno:GND.1", "black", [], "Do butonunun bir bacağı GND'ye."],
+    ["do:2.r", "re:2.r", "black", [], "Butonların GND bacakları zincirle birbirine bağlanır."],
+    ["re:2.r", "mi:2.r", "black", []],
+    ["mi:2.r", "fa:2.r", "black", []],
+    ["bz1:2", "uno:12", "purple", [], "Buzzer'ın + (uzun) bacağı."],
+    ["led1:A", "r1:1", "orange", [], "Do LED'i."],
+    ["r1:2", "uno:11", "green", []],
+    ["led2:A", "r2:1", "orange", [], "Re LED'i."],
+    ["r2:2", "uno:10", "green", []],
+    ["led3:A", "r3:1", "orange", [], "Mi LED'i."],
+    ["r3:2", "uno:9", "green", []],
+    ["led4:A", "r4:1", "orange", [], "Fa LED'i."],
+    ["r4:2", "uno:8", "green", []],
+    ["do:1.l", "uno:5", "blue", [], "Do butonu. Kod iç pull-up direncini açar."],
+    ["re:1.l", "uno:4", "blue", [], "Re butonu."],
+    ["mi:1.l", "uno:3", "blue", [], "Mi butonu."],
+    ["fa:1.l", "uno:2", "blue", [], "Fa butonu."]
+  ],
+  "kod": {
+    "dosya": "uno-piyano.ino",
+    "kutuphaneler": [],
+    "icerik": "// Mini piyano: 4 buton 4 nota çalar; çalan notanın LED'i yanar.\nconst int BUTONLAR[] = {5, 4, 3, 2};          // Do, Re, Mi, Fa butonları (öbür uçları GND'de)\nconst int LEDLER[] = {11, 10, 9, 8};          // her butonun kendi LED'i\nconst int NOTALAR[] = {262, 294, 330, 349};   // frekans (Hz): Do, Re, Mi, Fa\nconst char* NOTA_ADI[] = {\"Do\", \"Re\", \"Mi\", \"Fa\"};\nconst int ADET = 4;\nconst int BUZZER_PIN = 12;\n\nint calan = -1;  // çalan notanın sırası; -1: sessiz\n\nvoid setup() {\n  Serial.begin(9600);\n  for (int i = 0; i < ADET; i++) {\n    pinMode(BUTONLAR[i], INPUT_PULLUP);\n    pinMode(LEDLER[i], OUTPUT);\n  }\n}\n\nvoid loop() {\n  // Basılı ilk butonu bul. Basılı buton LOW okunur.\n  int basilan = -1;\n  for (int i = 0; i < ADET; i++) {\n    if (digitalRead(BUTONLAR[i]) == LOW) {\n      basilan = i;\n      break;\n    }\n  }\n\n  // Yalnız durum değişince sesi ve LED'leri güncelle.\n  if (basilan != calan) {\n    for (int i = 0; i < ADET; i++) {\n      digitalWrite(LEDLER[i], i == basilan ? HIGH : LOW);\n    }\n    if (basilan >= 0) {\n      tone(BUZZER_PIN, NOTALAR[basilan]);\n      Serial.println(NOTA_ADI[basilan]);\n    } else {\n      noTone(BUZZER_PIN);\n    }\n    calan = basilan;\n  }\n  delay(10);  // buton sıçramasını azaltır\n}\n"
+  },
+  "montaj": [
+    "4 butonu breadboard'a yan yana diz: Do, Re, Mi, Fa.",
+    "Her LED'i kendi butonunun yanına koy; uzun bacağına 220 Ω direnç bağla.",
+    "Butonların GND bacaklarını breadboard'un − hattına al.",
+    "Buzzer'ın uzun bacağı (+) 12. pine gider.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Do butonuna basılı tut: kalın bir ses çıkıyor, kırmızı LED yanıyor.",
+    "Sırayla Re, Mi, Fa'ya bas: ses her seferinde inceliyor, o butonun LED'i yanıyor.",
+    "Butonu bırak: ses kesiliyor, LED sönüyor.",
+    "Seri ekran çalan notanın adını yazıyor."
+  ],
+  "tanitim": {
+    "amac": "Dört butonlu küçük bir piyano. Her buton bir nota çalar ve kendi ışığını yakar. Kapı zili melodisi ya da müzik oyuncağı böyle yapılır.",
+    "nasil": [
+      "Her buton bir pine bağlıdır; basılınca pin LOW okunur.",
+      "Kod basılı butonu bulur ve onun notasını seçer.",
+      "tone() buzzer'a o notanın frekansını verir.",
+      "Aynı anda o butonun LED'i yanar; buton bırakılınca noTone() sesi keser."
+    ],
+    "ogrenilenler": [
+      "tone() ve noTone()",
+      "Nota frekansları",
+      "Dizi (array)",
+      "Birden çok buton"
+    ],
+    "demo": [
+      { "sure": 800, "yazi": "Do: kırmızı LED yanar.", "eylem": { "tur": "bas", "id": "do" } },
+      { "sure": 300, "yazi": "Do: kırmızı LED yanar.", "eylem": { "tur": "birak", "id": "do" } },
+      { "sure": 800, "yazi": "Re: sarı LED yanar.", "eylem": { "tur": "bas", "id": "re" } },
+      { "sure": 300, "yazi": "Re: sarı LED yanar.", "eylem": { "tur": "birak", "id": "re" } },
+      { "sure": 800, "yazi": "Mi: yeşil LED yanar.", "eylem": { "tur": "bas", "id": "mi" } },
+      { "sure": 300, "yazi": "Mi: yeşil LED yanar.", "eylem": { "tur": "birak", "id": "mi" } },
+      { "sure": 800, "yazi": "Fa: mavi LED yanar.", "eylem": { "tur": "bas", "id": "fa" } },
+      { "sure": 300, "yazi": "Fa: mavi LED yanar.", "eylem": { "tur": "birak", "id": "fa" } },
+      { "sure": 800, "yazi": "Geri dönüş: Mi.", "eylem": { "tur": "bas", "id": "mi" } },
+      { "sure": 300, "yazi": "Geri dönüş: Mi.", "eylem": { "tur": "birak", "id": "mi" } },
+      { "sure": 1200, "yazi": "Son nota: Do.", "eylem": { "tur": "bas", "id": "do" } },
+      { "sure": 1000, "yazi": "Buton bırakıldı: ses kesilir.", "eylem": { "tur": "birak", "id": "do" } }
+    ]
+  }
+}

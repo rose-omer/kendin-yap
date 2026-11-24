@@ -1,0 +1,252 @@
+{
+  "surum": 1,
+  "id": "uno-dijital-terazi",
+  "baslik": "Dijital terazi",
+  "ozet": "Yük hücresi ve HX711 ağırlığı ölçer; 16x2 LCD gram olarak gösterir. Düğme darayı sıfırlar.",
+  "zorluk": "İleri",
+  "sure": "2 saat",
+  "gereksinimler": [
+    "Açılışta terazi boşken kendini sıfırlar (dara).",
+    "LCD ağırlığı gram olarak, bir ondalıkla gösterir.",
+    "Dara düğmesine basınca o anki ağırlık sıfır kabul edilir.",
+    "Kalibrasyon katsayısı kodun başındaki KALIBRASYON sabitidir.",
+    "Kalibrasyondan sonra bilinen bir ağırlık ±%1 içinde okunur."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 20,
+      "top": 240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "left": 0,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "left": -140,
+      "top": 100,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rArka",
+      "left": 345,
+      "top": 160,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-hx711",
+      "id": "hx",
+      "left": 350,
+      "top": 270,
+      "attrs": {
+        "type": "5kg"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "left": -130,
+      "top": 300,
+      "attrs": {
+        "color": "green"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "lcd:VSS",
+      "uno:GND.1",
+      "black",
+      [],
+      "LCD'nin 1. pini (VSS)."
+    ],
+    [
+      "lcd:VDD",
+      "uno:5V",
+      "red",
+      [],
+      "LCD'nin 2. pini (VDD)."
+    ],
+    [
+      "lcd:RW",
+      "uno:GND.1",
+      "black",
+      [],
+      "5. pin (RW) GND'de: LCD yalnız yazı alır."
+    ],
+    [
+      "lcd:K",
+      "uno:GND.1",
+      "black",
+      [],
+      "16. pin (K): arka ışığın eksisi."
+    ],
+    [
+      "pot:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pot:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "pot:SIG",
+      "lcd:V0",
+      "yellow",
+      [],
+      "Potun orta bacağı LCD'nin 3. pinine (V0): kontrast."
+    ],
+    [
+      "lcd:A",
+      "rArka:1",
+      "orange",
+      [],
+      "15. pin (A): arka ışığın artısı."
+    ],
+    [
+      "rArka:2",
+      "uno:5V",
+      "red",
+      [],
+      "220 Ω arka ışığın akımını sınırlar."
+    ],
+    [
+      "hx:GND",
+      "uno:GND.3",
+      "black",
+      []
+    ],
+    [
+      "hx:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "btn1:2.r",
+      "uno:GND.1",
+      "black",
+      [],
+      "Dara butonunun bir bacağı GND'ye."
+    ],
+    [
+      "lcd:RS",
+      "uno:12",
+      "blue",
+      [],
+      "4. pin (RS)."
+    ],
+    [
+      "lcd:E",
+      "uno:11",
+      "purple",
+      [],
+      "6. pin (E)."
+    ],
+    [
+      "lcd:D4",
+      "uno:5",
+      "green",
+      [],
+      "11. pin (D4). D0–D3 (7–10. pinler) boş kalır."
+    ],
+    [
+      "lcd:D5",
+      "uno:4",
+      "green",
+      [],
+      "12. pin (D5)."
+    ],
+    [
+      "lcd:D6",
+      "uno:3",
+      "green",
+      [],
+      "13. pin (D6)."
+    ],
+    [
+      "lcd:D7",
+      "uno:2",
+      "green",
+      [],
+      "14. pin (D7)."
+    ],
+    [
+      "hx:DT",
+      "uno:8",
+      "blue",
+      [],
+      "Modülde DT ya da DOUT yazar."
+    ],
+    [
+      "hx:SCK",
+      "uno:9",
+      "yellow",
+      [],
+      "Modülde SCK ya da CLK yazar."
+    ],
+    [
+      "btn1:1.r",
+      "uno:7",
+      "purple",
+      [],
+      "Öbür bacak 7. pine. Kod iç pull-up direncini açar."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-dijital-terazi.ino",
+    "kutuphaneler": [
+      "HX711 Arduino Library"
+    ],
+    "icerik": "// Dijital terazi: yük hücresi + HX711 ağırlığı ölçer, 16x2 LCD gram gösterir.\n// Dara düğmesi o anki ağırlığı sıfır yapar.\n#include <LiquidCrystal.h>\n#include <HX711.h>\n\n// Kalibrasyon katsayısı: kendi yük hücren için montaj adımlarıyla bul.\nconst float KALIBRASYON = 420.0;\nconst int ORNEK_SAYISI = 10;     // her ölçümde ortalaması alınan okuma\nconst float SIFIR_ESIGI = 0.5;   // g; bunun altı 0 gösterilir\n\nconst int HX_DT_PIN = 8;\nconst int HX_SCK_PIN = 9;\nconst int DARA_PIN = 7;\nconst int LCD_RS = 12;\nconst int LCD_E = 11;\nconst int LCD_D4 = 5;\nconst int LCD_D5 = 4;\nconst int LCD_D6 = 3;\nconst int LCD_D7 = 2;\n\nLiquidCrystal lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7);\nHX711 tarti;\n\nvoid daraAl() {\n  lcd.clear();\n  lcd.print(\"Dara aliniyor\");\n  tarti.tare(20);  // 20 okumanın ortalaması sıfır olur\n  lcd.clear();\n  lcd.print(\"Agirlik:\");\n  Serial.println(\"Dara alindi\");\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(DARA_PIN, INPUT_PULLUP);\n  lcd.begin(16, 2);\n  tarti.begin(HX_DT_PIN, HX_SCK_PIN);\n\n  if (!tarti.wait_ready_timeout(2000)) {\n    lcd.print(\"HX711 yok\");\n    lcd.setCursor(0, 1);\n    lcd.print(\"Kablo kontrol et\");\n    Serial.println(\"HX711 bulunamadi\");\n    while (true) delay(1000);\n  }\n  tarti.set_scale(KALIBRASYON);\n  daraAl();\n}\n\nvoid loop() {\n  // Dara düğmesi (titreşime karşı iki kez okunur).\n  if (digitalRead(DARA_PIN) == LOW) {\n    delay(50);\n    if (digitalRead(DARA_PIN) == LOW) {\n      daraAl();\n      while (digitalRead(DARA_PIN) == LOW) delay(10);\n    }\n  }\n\n  if (!tarti.wait_ready_timeout(500)) return;\n  float gram = tarti.get_units(ORNEK_SAYISI);\n  if (fabs(gram) < SIFIR_ESIGI) gram = 0;\n\n  Serial.print(\"Agirlik: \");\n  Serial.print(gram, 1);\n  Serial.println(\" g\");\n\n  // Alt satır: sağa yaslı \"   123.4 g\"\n  char sayi[12];\n  dtostrf(gram, 10, 1, sayi);\n  lcd.setCursor(0, 1);\n  lcd.print(sayi);\n  lcd.print(\" g    \");\n}\n"
+  },
+  "montaj": [
+    "Yük hücresini iki plaka arasına vidala: bir ucu tabana, öbür ucu tartı tablasına. Üstündeki ok yük yönünü gösterir.",
+    "Yük hücresinin 4 telini HX711'e bağla: kırmızı E+, siyah E-, beyaz A-, yeşil A+. Ağırlık eksi çıkarsa beyaz ile yeşilin yerini değiştir.",
+    "HX711'in öbür ucunda GND, DT, SCK, VCC yazar; bunlar Arduino'ya gider.",
+    "LCD'yi breadboard'a tak. Potansiyometreyi ve 220 Ω arka ışık direncini yanına koy.",
+    "Dara butonunu breadboard'un ortasındaki boşluğa tak.",
+    "Kabloları sırayla tak.",
+    "Kalibrasyon 1: Kodda KALIBRASYON = 1.0 yaz ve yükle. Tartı boşken açılsın.",
+    "Kalibrasyon 2: Ağırlığını bildiğin bir şey koy (ör. 500 g'lık paket). Seri Port Ekranı'nda (9600) okunan değeri not al.",
+    "Kalibrasyon 3: KALIBRASYON = okunan değer / bilinen gram. Ör. 210000 / 500 = 420. Bu sayıyı yaz ve yeniden yükle."
+  ],
+  "testler": [
+    "Açılışta LCD \"Dara aliniyor\" yazar, sonra 0.0 g gösterir.",
+    "Bilinen ağırlığı koy: LCD doğru gramı gösterir.",
+    "Boş bir kap koy ve dara düğmesine bas: LCD 0.0 g gösterir; kaba konan şey ayrıca tartılır.",
+    "Ağırlığı kaldır: değer 0'a döner (daradan sonra eksi görünebilir).",
+    "HX711 bağlı değilse LCD \"HX711 yok\" yazar."
+  ],
+  "tanitim": {
+    "amac": "Mutfak tartısı gibi çalışan ağırlık ölçer. Yük hücresi ağırlıkla çok az esner; HX711 bu küçük değişimi sayıya çevirir. Kalibrasyonla kendi tartını gram doğruluğuna getirirsin.",
+    "nasil": [
+      "Yük hücresindeki gerinim ölçerlerin direnci ağırlıkla değişir.",
+      "HX711 bu çok küçük gerilimi yükseltir ve 24 bitlik sayıya çevirir.",
+      "Arduino sayıyı kalibrasyon katsayısına bölerek grama çevirir.",
+      "Dara: o anki okuma sıfır kabul edilir; düğme bunu tekrarlar.",
+      "LCD sonucu gösterir."
+    ],
+    "ogrenilenler": [
+      "Yük hücresi",
+      "HX711",
+      "Kalibrasyon",
+      "Dara (tare)"
+    ],
+    "demo": []
+  }
+}

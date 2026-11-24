@@ -1,0 +1,180 @@
+{
+  "surum": 1,
+  "id": "uno-joystick-pan-tilt",
+  "baslik": "Joystick ile pan-tilt",
+  "ozet": "Joystick iki servoyu yatay ve dikey döndürür; düğmesine basınca ikisi ortaya döner.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Kol sağa-sola itilince pan servosu döner; bırakınca durur.",
+    "Kol ileri-geri itilince tilt servosu döner.",
+    "Kol ne kadar çok itilirse servo o kadar hızlı döner.",
+    "Joystick'in düğmesine basınca iki servo 90°'ye döner.",
+    "Servolar ayrı 5 V kaynaktan beslenir; GND'ler ortaktır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-analog-joystick",
+      "id": "joy",
+      "left": -180,
+      "top": 240,
+      "attrs": {}
+    },
+    {
+      "type": "ky-modul",
+      "id": "guc",
+      "left": 60,
+      "top": 20,
+      "attrs": {
+        "baslik": "5 V güç kaynağı",
+        "sag": "+5V,GND",
+        "kaynak": "+5V:5",
+        "gnd": "GND",
+        "renk": "#c2410c",
+        "arama": "5V 2A adaptör",
+        "ozet": "İki servoyu besler. GND'si karta da bağlanır."
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "pan",
+      "left": 340,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "tilt",
+      "left": 340,
+      "top": 210,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "joy:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "joy:VCC",
+      "uno:5V",
+      "red",
+      [],
+      "Modülde +5V yazar."
+    ],
+    [
+      "guc:GND",
+      "uno:GND.1",
+      "black",
+      [],
+      "Ortak GND: kaynağın eksisi kartın GND'sine de gider."
+    ],
+    [
+      "pan:GND",
+      "guc:GND",
+      "black",
+      [],
+      "Servonun kahverengi kablosu."
+    ],
+    [
+      "pan:V+",
+      "guc:+5V",
+      "red",
+      [],
+      "Kırmızı kablo: ayrı 5 V kaynaktan."
+    ],
+    [
+      "tilt:GND",
+      "guc:GND",
+      "black",
+      []
+    ],
+    [
+      "tilt:V+",
+      "guc:+5V",
+      "red",
+      []
+    ],
+    [
+      "pan:PWM",
+      "uno:9",
+      "orange",
+      [],
+      "Servonun turuncu kablosu."
+    ],
+    [
+      "tilt:PWM",
+      "uno:10",
+      "yellow",
+      []
+    ],
+    [
+      "joy:HORZ",
+      "uno:A0",
+      "green",
+      [],
+      "Modülde VRx yazar."
+    ],
+    [
+      "joy:VERT",
+      "uno:A1",
+      "blue",
+      [],
+      "Modülde VRy yazar."
+    ],
+    [
+      "joy:SEL",
+      "uno:2",
+      "purple",
+      [],
+      "Modülde SW yazar. Kod iç pull-up direncini açar."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-joystick-pan-tilt.ino",
+    "kutuphaneler": [],
+    "icerik": "// Joystick ile pan-tilt: joystick iki servoyu döndürür, düğmesi ortalar.\n#include <Servo.h>\n\nconst int X_PIN = A0;      // HORZ (VRx)\nconst int Y_PIN = A1;      // VERT (VRy)\nconst int BUTON_PIN = 2;   // SEL (SW)\nconst int PAN_PIN = 9;\nconst int TILT_PIN = 10;\n\nconst int OLU_BOLGE = 60;    // orta çevresinde yok sayılan oynama (0-512)\nconst int EN_HIZ = 3;        // her adımda en çok kaç derece\nconst int ADIM_SURESI = 20;  // ms\nconst int ORTA_ACI = 90;\nconst int TILT_MIN = 20;     // braket çarpmasın diye tilt sınırları\nconst int TILT_MAX = 160;\nconst bool PAN_TERS = false;   // ters dönerse true yap\nconst bool TILT_TERS = false;\n\nServo pan;\nServo tilt;\nint panAci = ORTA_ACI;\nint tiltAci = ORTA_ACI;\n\n// Joystick okumasını (0-1023) derece/adım hızına çevirir.\nint hizHesapla(int okuma, bool ters) {\n  int sapma = okuma - 512;\n  if (abs(sapma) < OLU_BOLGE) return 0;\n  int hiz = map(abs(sapma), OLU_BOLGE, 512, 1, EN_HIZ);\n  if (sapma < 0) hiz = -hiz;\n  return ters ? -hiz : hiz;\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(BUTON_PIN, INPUT_PULLUP);\n  pan.attach(PAN_PIN);\n  tilt.attach(TILT_PIN);\n  pan.write(panAci);\n  tilt.write(tiltAci);\n}\n\nvoid loop() {\n  int eskiPan = panAci;\n  int eskiTilt = tiltAci;\n\n  panAci = constrain(panAci + hizHesapla(analogRead(X_PIN), PAN_TERS), 0, 180);\n  tiltAci = constrain(tiltAci + hizHesapla(analogRead(Y_PIN), TILT_TERS), TILT_MIN, TILT_MAX);\n\n  // Düğme basılıysa ikisini de ortala.\n  if (digitalRead(BUTON_PIN) == LOW) {\n    panAci = ORTA_ACI;\n    tiltAci = ORTA_ACI;\n  }\n\n  pan.write(panAci);\n  tilt.write(tiltAci);\n\n  if (panAci != eskiPan || tiltAci != eskiTilt) {\n    Serial.print(\"Pan: \");\n    Serial.print(panAci);\n    Serial.print(\"  Tilt: \");\n    Serial.println(tiltAci);\n  }\n  delay(ADIM_SURESI);\n}\n"
+  },
+  "montaj": [
+    "İki servoyu pan-tilt braketine tak: alttaki servo (pan) yatay, üstteki servo (tilt) dikey döner.",
+    "Servo kollarını henüz takma. Kod açılışta servoları 90°'ye getirir; kolları bu orta konumda tak.",
+    "En az 2 A veren 5 V kaynak kullan. Kaynağın eksisini Arduino GND'sine bağla; ortak GND olmazsa servolar titrer ya da dönmez.",
+    "Servo kabloları: kahverengi GND, kırmızı V+, turuncu sinyal.",
+    "Joystick modülünde GND, +5V, VRx, VRy, SW yazar. VRx = HORZ, VRy = VERT, SW = SEL.",
+    "Kabloları sırayla tak. Arduino USB'den, servolar 5 V kaynaktan beslenir.",
+    "Servo ters yöne dönüyorsa kodda PAN_TERS ya da TILT_TERS'i true yap."
+  ],
+  "testler": [
+    "Açılışta iki servo orta konuma (90°) gelir.",
+    "Kolu sağa it: pan servosu döner; bırakınca durur.",
+    "Kolu ileri it: tilt servosu döner.",
+    "Kolu hafifçe it: servo yavaş döner; sonuna kadar it: hızlı döner.",
+    "Düğmeye bas: iki servo ortaya döner.",
+    "Seri Port Ekranı (9600) açıları yazar."
+  ],
+  "tanitim": {
+    "amac": "Kamera, lazer işaretçi ya da sensör tutan iki eksenli hareketli kafa. Joystick'le sağa-sola (pan) ve yukarı-aşağı (tilt) çevrilir. Güvenlik kameraları ve robot kafaları bu yapıyı kullanır.",
+    "nasil": [
+      "Joystick içinde iki potansiyometre var; Arduino konumu A0 ve A1'den 0–1023 okur.",
+      "Orta konumdan sapma hıza çevrilir; ortadaki küçük oynama (ölü bölge) yok sayılır.",
+      "Her 20 ms'de açı hız kadar değişir ve servolara yazılır.",
+      "Düğmeye (SEL) basınca iki açı 90°'ye döner."
+    ],
+    "ogrenilenler": [
+      "Analog joystick",
+      "Servo kontrol",
+      "Ölü bölge",
+      "Ayrı güç ve ortak GND"
+    ],
+    "demo": []
+  }
+}

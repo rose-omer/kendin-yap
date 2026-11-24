@@ -1,0 +1,254 @@
+{
+  "surum": 1,
+  "id": "uno-sicaklik-fan",
+  "baslik": "Sıcaklıkla çalışan fan (Uno)",
+  "ozet": "Sıcaklık 30 °C'yi geçince fan çalışır, 27 °C'nin altına inince durur. Fan röle üzerinden ayrı 5 V kaynaktan beslenir.",
+  "zorluk": "Orta",
+  "sure": "1,5 saat",
+  "gereksinimler": [
+    "Sıcaklık 30 °C'yi geçince röle çeker ve fan döner.",
+    "Sıcaklık 27 °C'nin altına inince fan durur.",
+    "27–30 °C arasında fan durumunu korur (histerezis).",
+    "Fan çalışırken durum LED'i yanar.",
+    "Fan karttan değil, ayrı 5 V kaynaktan beslenir; GND ortaktır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ntc-temperature-sensor",
+      "id": "ntc",
+      "left": 40,
+      "top": 460,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 150,
+      "top": 30,
+      "attrs": {
+        "color": "blue"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 142,
+      "top": 110,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "role",
+      "left": 340,
+      "top": 80,
+      "attrs": {
+        "baslik": "Röle modülü (5 V, 1 kanal)",
+        "sol": "VCC,GND,IN",
+        "sag": "NO,COM,NC",
+        "besleme": "VCC:4.5-5.5",
+        "gnd": "GND",
+        "mcuCikis": "IN",
+        "renk": "#1d6fd8",
+        "arama": "5V tek kanal röle modülü",
+        "ozet": "Fanı açıp kapatır. IN LOW iken çeker."
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "fan",
+      "left": 560,
+      "top": 40,
+      "attrs": {
+        "baslik": "DC motor (5 V fan)",
+        "sol": "+,-",
+        "renk": "#4b5563",
+        "arama": "5V DC fan",
+        "ozet": "Pervaneli küçük motor. Röle üzerinden ayrı kaynaktan beslenir."
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "guc",
+      "left": 560,
+      "top": 280,
+      "attrs": {
+        "baslik": "5 V güç kaynağı",
+        "sol": "+5V,GND",
+        "kaynak": "+5V:5",
+        "gnd": "GND",
+        "renk": "#c2410c",
+        "arama": "5V 2A adaptör",
+        "ozet": "Fanı besler. GND'si karta da bağlanır."
+      }
+    }
+  ],
+  "connections": [
+    [
+      "ntc:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "ntc:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "role:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "role:VCC",
+      "uno:5V",
+      "red",
+      [],
+      "Röle bobini yaklaşık 70 mA çeker; Uno'nun 5V'u yeter."
+    ],
+    [
+      "guc:GND",
+      "uno:GND.3",
+      "black",
+      [],
+      "Ortak GND: kaynağın eksisi kartın GND'sine de gider."
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "ntc:OUT",
+      "uno:A0",
+      "yellow",
+      [],
+      "OUT: analog çıkış."
+    ],
+    [
+      "role:IN",
+      "uno:7",
+      "green",
+      [],
+      "IN LOW iken röle çeker."
+    ],
+    [
+      "guc:+5V",
+      "role:COM",
+      "red",
+      [],
+      "Fanın akımı rölenin vida klemensinden geçer, karttan değil."
+    ],
+    [
+      "role:NO",
+      "fan:+",
+      "orange",
+      [],
+      "NO: röle çekince kapanan uç."
+    ],
+    [
+      "fan:-",
+      "guc:GND",
+      "black",
+      []
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:8",
+      "blue",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-sicaklik-fan.ino",
+    "kutuphaneler": [],
+    "icerik": "// Sıcaklıkla fan: NTC sıcaklığı ölçer, röle fanı histerezisle açıp kapatır.\nconst int NTC_PIN = A0;      // NTC modülü OUT\nconst int ROLE_PIN = 7;      // röle modülü IN\nconst int LED_PIN = 8;       // durum LED'i: fan çalışırken yanar\n\nconst float ACMA_C = 30.0;   // bunun üstünde fan açılır\nconst float KAPAMA_C = 27.0; // bunun altında fan kapanır\nconst float BETA = 3950;     // NTC'nin B değeri (modülün belgesinde yazar)\nconst unsigned long OLCUM_MS = 1000;\n\n// Çoğu röle modülü LOW ile çeker. Seninki HIGH ile çekiyorsa bu iki satırı değiştir.\nconst int ROLE_ACIK = LOW;\nconst int ROLE_KAPALI = HIGH;\n\nbool fanAcik = false;\n\n// 10 okumanın ortalamasından sıcaklığı (°C) hesaplar.\nfloat sicaklikOku() {\n  long toplam = 0;\n  for (int i = 0; i < 10; i++) {\n    toplam += analogRead(NTC_PIN);\n    delay(5);\n  }\n  float deger = toplam / 10.0;\n  if (deger < 1) deger = 1;          // sıfıra bölmeyi önle\n  if (deger > 1022) deger = 1022;\n  return 1 / (log(1 / (1023.0 / deger - 1)) / BETA + 1.0 / 298.15) - 273.15;\n}\n\nvoid fanAyarla(bool ac) {\n  fanAcik = ac;\n  digitalWrite(ROLE_PIN, ac ? ROLE_ACIK : ROLE_KAPALI);\n  digitalWrite(LED_PIN, ac ? HIGH : LOW);\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(ROLE_PIN, OUTPUT);\n  pinMode(LED_PIN, OUTPUT);\n  fanAyarla(false);\n  Serial.println(\"Hazir. Fan kapali.\");\n}\n\nvoid loop() {\n  float c = sicaklikOku();\n\n  // Histerezis: iki eşik arasında durum değişmez; fan sık sık açılıp kapanmaz.\n  if (!fanAcik && c > ACMA_C) fanAyarla(true);\n  else if (fanAcik && c < KAPAMA_C) fanAyarla(false);\n\n  Serial.print(\"Sicaklik: \");\n  Serial.print(c, 1);\n  Serial.print(\" C  Fan: \");\n  Serial.println(fanAcik ? \"ACIK\" : \"KAPALI\");\n  delay(OLCUM_MS);\n}\n"
+  },
+  "montaj": [
+    "Fanı takmadan önce röleyi ve LED'i kur, test et.",
+    "5 V kaynağın + ve − uçlarını breadboard'un ayrı bir güç hattına al.",
+    "Kaynağın GND'sini Uno'nun GND'sine bağla (ortak GND).",
+    "Fanın kablolarını rölenin vida klemenslerine (COM, NO) sık; + ucu NO'ya.",
+    "NTC sensörünü ölçmek istediğin yere, fanın rüzgârı doğrudan vurmayacak biçimde koy."
+  ],
+  "testler": [
+    "Seri Port Ekranı (9600) her saniye sıcaklığı yazıyor.",
+    "Sensörü parmaklarınla ısıt: 30 °C'yi geçince röle \"tık\" eder, fan döner, LED yanar.",
+    "Sensör soğuyunca fan 27 °C'nin altında duruyor.",
+    "Simülasyonda sıcaklığı 35 °C yap: LED yanıyor. Röle ve fan simülasyonda görünmez; durumu LED gösterir."
+  ],
+  "tanitim": {
+    "amac": "Ortam ısınınca fanı kendiliğinden çalıştıran termostat. Elektronik kutusu, sera ya da 3D yazıcı kabini için kullanılır.",
+    "nasil": [
+      "NTC sensörü sıcaklığa göre direnç değiştirir; Arduino bunu A0'dan okur.",
+      "Okunan değer B denklemiyle °C'ye çevrilir.",
+      "30 °C'yi geçince Arduino röleyi çektirir; fan ayrı 5 V kaynaktan beslenip döner.",
+      "27 °C'nin altına inince röle bırakılır; arada fan durumunu korur."
+    ],
+    "ogrenilenler": [
+      "Histerezis",
+      "NTC ile sıcaklık",
+      "Röle ile yük sürme",
+      "Ortak GND"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Oda 25 °C: fan kapalı.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ntc",
+          "deger": 25
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Isındı (35 °C): röle çeker, fan döner, LED yanar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ntc",
+          "deger": 35
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Biraz soğudu (29 °C): eşikler arasında; fan çalışmayı sürdürür.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ntc",
+          "deger": 29
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Soğudu (22 °C): fan durur, LED söner.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ntc",
+          "deger": 22
+        }
+      }
+    ]
+  }
+}

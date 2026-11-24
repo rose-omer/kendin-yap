@@ -1,0 +1,210 @@
+{
+  "surum": 1,
+  "id": "uno-servo-radar",
+  "baslik": "Servo radar (Uno)",
+  "ozet": "Servo 15°–165° arası tarar; üstündeki HC-SR04 her açıda mesafeyi ölçer. Yakın cisim varsa buzzer öter.",
+  "zorluk": "İleri",
+  "sure": "2 saat",
+  "gereksinimler": [
+    "Servo 15° ile 165° arasında 3'er derece adımla gidip gelir.",
+    "Her adımda Seri Port Ekranı'na \"aci,mesafe\" satırı yazılır (ör. 90,42).",
+    "Yankı gelmezse mesafe 0 yazılır.",
+    "Cisim 30 cm'den yakınsa buzzer kısa öter ve kırmızı LED yanar.",
+    "Her taramanın sonunda en yakın cisim \"#\" ile başlayan satırla yazılır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "sr04",
+      "left": 20,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 250,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 400,
+      "top": 40,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 392,
+      "top": 120,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "left": 380,
+      "top": 220,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "sr04:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr04:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "bz1:1",
+      "uno:GND.1",
+      "black",
+      [],
+      "Buzzer'ın - (kısa) bacağı."
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "servo1:GND",
+      "uno:GND.3",
+      "black",
+      [],
+      "Servonun kahverengi kablosu."
+    ],
+    [
+      "servo1:V+",
+      "uno:5V",
+      "red",
+      [],
+      "Servonun kırmızı kablosu. Tek küçük servo (SG90) Uno'nun 5V'undan beslenebilir."
+    ],
+    [
+      "sr04:TRIG",
+      "uno:12",
+      "orange",
+      [],
+      "Sensör servoyla döner; kabloları gevşek ve uzun bırak."
+    ],
+    [
+      "sr04:ECHO",
+      "uno:11",
+      "yellow",
+      [],
+      "Uno 5 V çalıştığı için gerilim bölücü gerekmez."
+    ],
+    [
+      "bz1:2",
+      "uno:4",
+      "blue",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:6",
+      "green",
+      []
+    ],
+    [
+      "servo1:PWM",
+      "uno:9",
+      "purple",
+      [],
+      "Servonun turuncu kablosu."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-servo-radar.ino",
+    "kutuphaneler": [],
+    "icerik": "// Servo radar: servo döner, HC-SR04 her açıda mesafeyi ölçer, seri ekrana \"aci,mesafe\" yazar.\n#include <Servo.h>  // Arduino IDE ile gelir\n\nconst int SERVO_PIN = 9;\nconst int TRIG_PIN = 12;\nconst int ECHO_PIN = 11;\nconst int BUZZER_PIN = 4;\nconst int LED_PIN = 6;\n\nconst int MIN_ACI = 15;        // taramanın başı\nconst int MAX_ACI = 165;       // taramanın sonu\nconst int ADIM = 3;            // her adımda dönülen derece\nconst int BEKLE_MS = 30;       // servo yerine otursun diye bekleme\nconst int YAKIN_CM = 30;       // bundan yakın cisim uyarı verir\n\nServo servo;\nint aci = MIN_ACI;\nint yon = ADIM;\nlong enYakinCm = 0;   // bu taramadaki en yakın cisim (0: yok)\nint enYakinAci = 0;\n\n// Mesafeyi cm olarak döndürür; yankı gelmezse 0.\nlong mesafeOlc() {\n  digitalWrite(TRIG_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG_PIN, LOW);\n  long sure = pulseIn(ECHO_PIN, HIGH, 30000);  // en çok 30 ms bekle (~5 m)\n  return sure / 58;\n}\n\n// Bir tarama bitince en yakın cismi yazar ve sayacı sıfırlar.\nvoid taramaBitti() {\n  Serial.print(\"# En yakin: \");\n  if (enYakinCm > 0) {\n    Serial.print(enYakinCm);\n    Serial.print(\" cm, aci \");\n    Serial.println(enYakinAci);\n  } else {\n    Serial.println(\"yok\");\n  }\n  enYakinCm = 0;\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(TRIG_PIN, OUTPUT);\n  pinMode(ECHO_PIN, INPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  pinMode(LED_PIN, OUTPUT);\n  servo.attach(SERVO_PIN);\n  servo.write(aci);\n  delay(500);\n  Serial.println(\"# Radar basladi. Bicim: aci,mesafe\");\n}\n\nvoid loop() {\n  servo.write(aci);\n  delay(BEKLE_MS);\n  long cm = mesafeOlc();\n\n  Serial.print(aci);\n  Serial.print(',');\n  Serial.println(cm);\n\n  if (cm > 0 && (enYakinCm == 0 || cm < enYakinCm)) {\n    enYakinCm = cm;\n    enYakinAci = aci;\n  }\n\n  bool yakin = cm > 0 && cm < YAKIN_CM;\n  digitalWrite(LED_PIN, yakin ? HIGH : LOW);\n  if (yakin) tone(BUZZER_PIN, 2000, 20);\n\n  // Uca gelince yön değiştir.\n  aci += yon;\n  if (aci >= MAX_ACI) {\n    aci = MAX_ACI;\n    yon = -ADIM;\n    taramaBitti();\n  } else if (aci <= MIN_ACI) {\n    aci = MIN_ACI;\n    yon = ADIM;\n    taramaBitti();\n  }\n}\n"
+  },
+  "montaj": [
+    "HC-SR04'ü servo kolunun üstüne sıcak silikonla ya da bantla sabitle; \"gözleri\" öne baksın.",
+    "Sensör kablolarını servo dönerken gerilmeyecek uzunlukta bırak.",
+    "Servoyu masaya sabitle; dönerken kaymasın.",
+    "LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Servo 15° ile 165° arasında gidip geliyor.",
+    "Seri Port Ekranı (9600) \"aci,mesafe\" satırları yazıyor (ör. 90,120).",
+    "Sensörün önüne 20 cm'de bir kutu koy: o açılarda buzzer ötüyor, LED yanıyor.",
+    "Her tarama sonunda \"# En yakin\" satırı geliyor.",
+    "Simülasyonda mesafe tek kaydırıcıdır; her açıda aynı mesafe ölçülür."
+  ],
+  "tanitim": {
+    "amac": "Dönen bir sensörle çevreyi tarayan küçük radar. Engelden kaçan robotlar ve park yardımcıları bu fikirle çalışır.",
+    "nasil": [
+      "Servo 15°'den 165°'ye 3'er derece döner, sonra geri gelir.",
+      "Her açıda HC-SR04 mesafeyi ölçer.",
+      "Arduino \"aci,mesafe\" satırını seri ekrana yazar; bilgisayar bunu radar ekranına çevirebilir.",
+      "Cisim 30 cm'den yakınsa buzzer öter, kırmızı LED yanar."
+    ],
+    "ogrenilenler": [
+      "Servo ile tarama",
+      "Seri veri biçimi (CSV)",
+      "En küçük değeri bulma",
+      "Ultrasonik mesafe"
+    ],
+    "demo": [
+      {
+        "sure": 5000,
+        "yazi": "Ortam boş (200 cm): servo tarar, ses yok.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 200
+        }
+      },
+      {
+        "sure": 5000,
+        "yazi": "Bir cisim yaklaştı (20 cm): buzzer öter, LED yanar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 20
+        }
+      },
+      {
+        "sure": 5000,
+        "yazi": "Cisim uzaklaştı (120 cm): tarama sessiz sürer.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 120
+        }
+      }
+    ]
+  }
+}

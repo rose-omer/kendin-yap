@@ -1,0 +1,202 @@
+{
+  "surum": 1,
+  "id": "uno-ir-kumanda",
+  "baslik": "IR kumandayla LED",
+  "ozet": "Kumandanın 1, 2, 3 tuşları üç LED'i yakıp söndürür; 0 tuşu hepsini söndürür.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "1, 2, 3 tuşu ilgili LED'i yakar; yanıyorsa söndürür.",
+    "0 tuşu bütün LED'leri söndürür.",
+    "Tuşu basılı tutmak LED'i tekrar tekrar değiştirmez.",
+    "Seri Port Ekranı her tuşun kodunu ve protokolünü yazar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 220,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 60,
+      "top": 20,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "left": 240,
+      "top": 20,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 52,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "left": 232,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-ir-receiver",
+      "id": "ir",
+      "left": 320,
+      "top": 40,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "ir:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "ir:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "led2:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "led3:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "ir:DAT",
+      "uno:2",
+      "purple",
+      [],
+      "Alıcının sinyal pini (OUT ya da S yazar)."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:11",
+      "red",
+      []
+    ],
+    [
+      "led2:A",
+      "r2:1",
+      "orange",
+      []
+    ],
+    [
+      "r2:2",
+      "uno:10",
+      "yellow",
+      []
+    ],
+    [
+      "led3:A",
+      "r3:1",
+      "orange",
+      []
+    ],
+    [
+      "r3:2",
+      "uno:9",
+      "green",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-ir-kumanda.ino",
+    "kutuphaneler": [
+      "IRremote"
+    ],
+    "icerik": "// IR kumandayla LED: 1, 2, 3 tuşları LED'leri değiştirir, 0 hepsini söndürür.\n// Seri ekran her tuşun kodunu yazar; kendi kumandanın kodlarını aşağıya yaz.\n#include <IRremote.hpp>\n\nconst int IR_PIN = 2;\nconst int LED_PINLERI[3] = {11, 10, 9};  // LED 1, LED 2, LED 3\n\n// Tuş kodları (yaygın NEC kumanda). Seri ekranda gördüğün kodları yaz.\nconst uint8_t TUS_0 = 0x16;\nconst uint8_t TUS_1 = 0x0C;\nconst uint8_t TUS_2 = 0x18;\nconst uint8_t TUS_3 = 0x5E;\n\nbool durum[3] = {false, false, false};\n\nvoid ledDegistir(int no) {\n  durum[no] = !durum[no];\n  digitalWrite(LED_PINLERI[no], durum[no]);\n  Serial.print(\"LED \");\n  Serial.print(no + 1);\n  Serial.println(durum[no] ? \" acik\" : \" kapali\");\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  for (int i = 0; i < 3; i++) pinMode(LED_PINLERI[i], OUTPUT);\n  IrReceiver.begin(IR_PIN, ENABLE_LED_FEEDBACK);  // kart LED'i (13) sinyalde yanar\n  Serial.println(\"IR alici hazir. Kumandada bir tusa basin.\");\n}\n\nvoid loop() {\n  if (!IrReceiver.decode()) return;\n\n  // Basılı tutunca gelen tekrar sinyallerini ve çözülemeyenleri atla.\n  bool tekrar = IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT;\n  if (!tekrar && IrReceiver.decodedIRData.protocol != UNKNOWN) {\n    uint8_t kod = IrReceiver.decodedIRData.command;\n    Serial.print(\"Kod: 0x\");\n    Serial.print(kod, HEX);\n    Serial.print(\"  Protokol: \");\n    Serial.println(getProtocolString(IrReceiver.decodedIRData.protocol));\n\n    if (kod == TUS_1) ledDegistir(0);\n    else if (kod == TUS_2) ledDegistir(1);\n    else if (kod == TUS_3) ledDegistir(2);\n    else if (kod == TUS_0) {\n      for (int i = 0; i < 3; i++) {\n        durum[i] = false;\n        digitalWrite(LED_PINLERI[i], LOW);\n      }\n      Serial.println(\"Hepsi kapali\");\n    }\n  }\n  IrReceiver.resume();  // sonraki sinyali bekle\n}\n"
+  },
+  "montaj": [
+    "IR alıcıyı breadboard'a tak. 3 bacaklı alıcının (VS1838B) yuvarlak gözü sana bakarken pinler genelde soldan sağa OUT, GND, VCC'dir. Modülde S, -, + yazar. Sıra modele göre değişir; üstündeki yazıya bak.",
+    "Her LED'in uzun bacağına 220 Ω direnç bağla. 11. pin LED 1, 10. pin LED 2, 9. pin LED 3.",
+    "Kabloları sırayla tak.",
+    "Kodu yükle ve Seri Port Ekranı'nı (9600) aç.",
+    "Kumandada 0, 1, 2, 3 tuşlarına sırayla bas; ekrandaki kodları not al.",
+    "Kodlar koddaki TUS_0–TUS_3 sabitlerinden farklıysa sabitleri değiştir ve yeniden yükle."
+  ],
+  "testler": [
+    "1 tuşu: LED 1 yanar; yine 1: söner.",
+    "2 ve 3 tuşları LED 2'yi ve LED 3'ü aynı biçimde değiştirir.",
+    "0 tuşu: bütün LED'ler söner.",
+    "Başka bir tuş: yalnız Seri Port Ekranı kod yazar; LED'ler değişmez.",
+    "Tuşu basılı tut: LED bir kez değişir, yanıp sönmez.",
+    "Kumandayı 3–5 metreden dene."
+  ],
+  "tanitim": {
+    "amac": "Eski bir TV kumandasıyla ışıkları uzaktan yakıp söndürür. Kumanda kızılötesi ışıkla kod gönderir; alıcı bu kodu çözer. Kendi kumandanın kodlarını Seri Port Ekranı'nda görüp koda yazarsın.",
+    "nasil": [
+      "Kumanda her tuş için ayrı bir kızılötesi kod gönderir.",
+      "IR alıcı ışığı elektrik sinyaline çevirir; IRremote kütüphanesi kodu çözer.",
+      "Kod 1, 2 ya da 3 ise ilgili LED durum değiştirir; 0 ise hepsi söner.",
+      "Basılı tutunca gelen tekrar sinyalleri yok sayılır."
+    ],
+    "ogrenilenler": [
+      "Kızılötesi haberleşme",
+      "IRremote",
+      "Dizi ile çok LED",
+      "Onaltılık (HEX) kod"
+    ],
+    "demo": []
+  }
+}

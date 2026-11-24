@@ -1,0 +1,63 @@
+{
+  "surum": 1,
+  "id": "uno-pot-parlaklik",
+  "baslik": "Düğmeyle LED parlaklığı (Uno)",
+  "ozet": "Potansiyometreyi çevirince LED'in parlaklığı değişir. Seri ekran değeri yazar.",
+  "zorluk": "Çok kolay",
+  "sure": "20 dakika",
+  "gereksinimler": [
+    "Düğme bir uçtayken LED söner, öbür uçtayken tam parlak yanar.",
+    "Arada parlaklık düğmeyle birlikte yavaşça değişir.",
+    "Seri ekran (9600) okunan değeri ve parlaklığı yazar."
+  ],
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "left": 0, "top": 200, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "left": 138, "top": 0, "attrs": { "color": "white" } },
+    { "type": "wokwi-resistor", "id": "r1", "left": 130, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-potentiometer", "id": "pot", "left": 99, "top": 446, "rotate": 180, "attrs": {} }
+  ],
+  "connections": [
+    ["pot:GND", "uno:GND.2", "black", [], "Potansiyometrenin bir dış bacağı."],
+    ["pot:VCC", "uno:5V", "red", [], "Öbür dış bacak."],
+    ["led1:C", "uno:GND.1", "black", [], "LED'in kısa bacağı."],
+    ["pot:SIG", "uno:A0", "yellow", [], "Orta bacak: analog sinyal."],
+    ["led1:A", "r1:1", "orange", [], "LED'in uzun bacağı dirence."],
+    ["r1:2", "uno:9", "green", [], "9. pin PWM verir (kartta ~ işareti)."]
+  ],
+  "kod": {
+    "dosya": "uno-pot-parlaklik.ino",
+    "kutuphaneler": [],
+    "icerik": "// Düğmeyle parlaklık: potansiyometre LED'in parlaklığını ayarlar.\nconst int POT_PIN = A0;     // potansiyometrenin orta bacağı\nconst int LED_PIN = 9;      // PWM pini (kartta ~ işareti var)\nconst int BEKLE_MS = 100;   // iki okuma arası bekleme\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n  int deger = analogRead(POT_PIN);              // 0-1023\n  int parlaklik = map(deger, 0, 1023, 0, 255);  // PWM 0-255 ister\n  analogWrite(LED_PIN, parlaklik);\n\n  Serial.print(\"Pot: \");\n  Serial.print(deger);\n  Serial.print(\"  Parlaklik: \");\n  Serial.println(parlaklik);\n  delay(BEKLE_MS);\n}\n"
+  },
+  "montaj": [
+    "Potansiyometrenin üç bacağını breadboard'da ayrı sıralara tak.",
+    "LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Düğmeyi en sola çevir: LED sönüyor, seri ekran 0 yazıyor.",
+    "Düğmeyi en sağa çevir: LED tam parlak, seri ekran 1023 yazıyor.",
+    "Düğmeyi yavaşça çevir: parlaklık yavaşça değişiyor."
+  ],
+  "tanitim": {
+    "amac": "Bir düğmeyle lambanın parlaklığını ayarlar. Evdeki dimmer anahtarının küçük hâli. Masa lambası ya da ekran ışığı ayarı böyle çalışır.",
+    "nasil": [
+      "Potansiyometre döndükçe orta bacaktaki gerilim 0–5 V arasında değişir.",
+      "Arduino bunu A0'dan 0–1023 arası sayı olarak okur.",
+      "map() sayıyı 0–255 aralığına çevirir.",
+      "analogWrite() 9. pinden PWM verir; LED o kadar parlak yanar."
+    ],
+    "ogrenilenler": [
+      "Analog okuma",
+      "map()",
+      "analogWrite (PWM)",
+      "Seri ekran"
+    ],
+    "demo": [
+      { "sure": 2500, "yazi": "Düğme en solda: LED sönük.", "eylem": { "tur": "pot", "id": "pot", "deger": 0 } },
+      { "sure": 2500, "yazi": "Düğme çeyrekte: LED hafif yanar.", "eylem": { "tur": "pot", "id": "pot", "deger": 250 } },
+      { "sure": 2500, "yazi": "Düğme ortada: LED yarı parlak.", "eylem": { "tur": "pot", "id": "pot", "deger": 512 } },
+      { "sure": 2500, "yazi": "Düğme en sağda: LED tam parlak.", "eylem": { "tur": "pot", "id": "pot", "deger": 1023 } }
+    ]
+  }
+}

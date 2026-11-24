@@ -1,0 +1,262 @@
+{
+  "surum": 1,
+  "id": "uno-elektronik-zar",
+  "baslik": "Elektronik zar",
+  "ozet": "Düğmeye basınca 7 segment göstergede rakamlar döner ve 1–6 arası bir sayıda durur.",
+  "zorluk": "Kolay",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Açılışta gösterge \"-\" gösterir.",
+    "Düğmeye basınca rakamlar hızlıdan yavaşa döner (yaklaşık 1,5 saniye).",
+    "Sonunda 1–6 arası rastgele bir sayı kalır.",
+    "Her segmentin kendi 220 Ω direnci vardır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 300,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "seg",
+      "left": 180,
+      "top": 40,
+      "attrs": {
+        "color": "red",
+        "common": "cathode"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rG",
+      "left": 1.5,
+      "top": 191,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rF",
+      "left": 59.5,
+      "top": 191,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rE",
+      "left": 117.5,
+      "top": 191,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rD",
+      "left": 175.5,
+      "top": 191,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rC",
+      "left": 233.5,
+      "top": 191,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rB",
+      "left": 291.5,
+      "top": 191,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rA",
+      "left": 349.5,
+      "top": 191,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "left": -140,
+      "top": 330,
+      "attrs": {
+        "color": "blue"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "seg:COM.1",
+      "uno:GND.1",
+      "black",
+      [],
+      "Ortak katot (COM) GND'ye. İki COM pini içeride bağlıdır; biri yeter."
+    ],
+    [
+      "btn1:2.r",
+      "uno:GND.1",
+      "black",
+      [],
+      "Butonun bir bacağı GND'ye."
+    ],
+    [
+      "seg:G",
+      "rG:1",
+      "blue",
+      [],
+      "G segmenti."
+    ],
+    [
+      "rG:2",
+      "uno:8",
+      "blue",
+      []
+    ],
+    [
+      "seg:F",
+      "rF:1",
+      "green",
+      [],
+      "F segmenti."
+    ],
+    [
+      "rF:2",
+      "uno:7",
+      "green",
+      []
+    ],
+    [
+      "seg:E",
+      "rE:1",
+      "purple",
+      [],
+      "E segmenti."
+    ],
+    [
+      "rE:2",
+      "uno:6",
+      "purple",
+      []
+    ],
+    [
+      "seg:D",
+      "rD:1",
+      "orange",
+      [],
+      "D segmenti."
+    ],
+    [
+      "rD:2",
+      "uno:5",
+      "orange",
+      []
+    ],
+    [
+      "seg:C",
+      "rC:1",
+      "yellow",
+      [],
+      "C segmenti."
+    ],
+    [
+      "rC:2",
+      "uno:4",
+      "yellow",
+      []
+    ],
+    [
+      "seg:B",
+      "rB:1",
+      "blue",
+      [],
+      "B segmenti."
+    ],
+    [
+      "rB:2",
+      "uno:3",
+      "blue",
+      []
+    ],
+    [
+      "seg:A",
+      "rA:1",
+      "green",
+      [],
+      "A segmenti."
+    ],
+    [
+      "rA:2",
+      "uno:2",
+      "green",
+      []
+    ],
+    [
+      "btn1:1.r",
+      "uno:12",
+      "purple",
+      [],
+      "Öbür bacak 12. pine. Kod iç pull-up direncini açar."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-elektronik-zar.ino",
+    "kutuphaneler": [],
+    "icerik": "// Elektronik zar: düğmeye basınca 7 segment göstergede 1-6 arası sayı çıkar.\nconst int SEGMENT_PINLERI[7] = {2, 3, 4, 5, 6, 7, 8};  // A, B, C, D, E, F, G\nconst int BUTON_PIN = 12;\nconst bool ORTAK_ANOT = false;   // Ortak anotlu gösterge için true yap (COM -> 5V).\nconst int ANIMASYON_ADIMI = 15;  // dönen rakam sayısı\nconst int ILK_BEKLEME = 30;      // ms; ilk adımın süresi\nconst int BEKLEME_ARTISI = 10;   // ms; her adımda yavaşlama\n\n// Rakamların segmentleri: bit 0 = A ... bit 6 = G.\nconst byte RAKAMLAR[7] = {\n  0b0111111,  // 0\n  0b0000110,  // 1\n  0b1011011,  // 2\n  0b1001111,  // 3\n  0b1100110,  // 4\n  0b1101101,  // 5\n  0b1111101,  // 6\n};\nconst byte CIZGI = 0b1000000;  // yalnız G: \"-\"\n\nbool tohumAtildi = false;\n\nvoid goster(byte desen) {\n  for (int i = 0; i < 7; i++) {\n    bool yan = desen & (1 << i);\n    // Ortak katotta HIGH yakar; ortak anotta LOW yakar.\n    digitalWrite(SEGMENT_PINLERI[i], yan != ORTAK_ANOT ? HIGH : LOW);\n  }\n}\n\n// Rakamları giderek yavaşlayarak döndürür; son gösterileni döndürür.\nint zarAt() {\n  int sayi = 0;\n  for (int i = 0; i < ANIMASYON_ADIMI; i++) {\n    int yeni;\n    do {\n      yeni = random(1, 7);  // 1-6\n    } while (yeni == sayi);  // aynı rakam art arda gelmesin\n    sayi = yeni;\n    goster(RAKAMLAR[sayi]);\n    delay(ILK_BEKLEME + i * BEKLEME_ARTISI);\n  }\n  return sayi;\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  for (int i = 0; i < 7; i++) pinMode(SEGMENT_PINLERI[i], OUTPUT);\n  pinMode(BUTON_PIN, INPUT_PULLUP);\n  goster(CIZGI);\n}\n\nvoid loop() {\n  if (digitalRead(BUTON_PIN) != LOW) return;\n  delay(30);  // buton titreşimi\n  if (digitalRead(BUTON_PIN) != LOW) return;\n\n  // İlk basış anı her seferinde farklıdır; rastgeleliğin tohumu olur.\n  if (!tohumAtildi) {\n    randomSeed(micros());\n    tohumAtildi = true;\n  }\n\n  int sayi = zarAt();\n  Serial.print(\"Zar: \");\n  Serial.println(sayi);\n\n  // Bırakılana kadar bekle.\n  while (digitalRead(BUTON_PIN) == LOW) delay(10);\n  delay(30);\n}\n"
+  },
+  "montaj": [
+    "Ortak katotlu tek haneli 7 segment gösterge al (ör. 5161AS). Ortak pin (COM) GND'ye gider.",
+    "Ortak anotlu gösterge aldıysan COM'u 5V'a bağla ve kodda ORTAK_ANOT'u true yap.",
+    "Yaygın pin düzeni: üst sıra G, F, COM, A, B; alt sıra E, D, COM, C, DP. Modele göre değişebilir; satıcının şemasına bak.",
+    "Her segment pinine (A–G) bir 220 Ω direnç bağla. DP (nokta) boş kalır.",
+    "Butonu breadboard'un ortasındaki boşluğa tak.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Açılışta gösterge ortada bir çizgi (-) gösterir.",
+    "Düğmeye bas: rakamlar döner, yavaşlar ve bir sayıda durur.",
+    "10 kez at: 1–6 arası farklı sayılar gelir; 0, 7, 8, 9 gelmez.",
+    "Seri Port Ekranı (9600) atılan sayıyı yazar.",
+    "Bir segment hiç yanmıyorsa o segmentin direncini ve kablosunu kontrol et."
+  ],
+  "tanitim": {
+    "amac": "Kutu oyunları için elektronik zar. Düğmeye basınca rakamlar kayar ve rastgele bir sayıda durur. 7 segment göstergenin rakamı nasıl çizdiğini öğretir.",
+    "nasil": [
+      "Gösterge 7 ayrı LED çubuğundan (A–G) oluşur; her çubuk bir pine bağlıdır.",
+      "Kod her rakam için yanacak çubukları bir tabloda tutar.",
+      "Düğmeye basınca rastgele rakamlar giderek yavaşlayarak gösterilir.",
+      "Son rakam random(1, 7) ile seçilir: 1–6."
+    ],
+    "ogrenilenler": [
+      "7 segment gösterge",
+      "Bit maskesi",
+      "random()",
+      "Buton titreşimi"
+    ],
+    "demo": []
+  }
+}

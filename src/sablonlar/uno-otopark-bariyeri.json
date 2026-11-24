@@ -1,0 +1,245 @@
+{
+  "surum": 1,
+  "id": "uno-otopark-bariyeri",
+  "baslik": "Otopark bariyeri (Uno)",
+  "ozet": "Araç yaklaşınca bip sesi gelir, bariyer kalkar ve yeşil LED yanar. Araç geçince bariyer iner.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Yol boşken bariyer kapalı ve kırmızı LED yanık.",
+    "Araç 30 cm'den yakına gelince buzzer kısa öter, bariyer yavaşça kalkar, yeşil LED yanar.",
+    "Araç gidince bariyer 2 saniye sonra iner ve kırmızı LED yanar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "sr04",
+      "left": -60,
+      "top": 20,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "kirmizi",
+      "left": 160,
+      "top": 30,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 152,
+      "top": 110,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "yesil",
+      "left": 245,
+      "top": 30,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "left": 237,
+      "top": 110,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 330,
+      "top": 30,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "bariyer",
+      "left": 380,
+      "top": 220,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "sr04:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr04:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "kirmizi:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "yesil:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "bz1:1",
+      "uno:GND.1",
+      "black",
+      [],
+      "Buzzer'ın - (kısa) bacağı."
+    ],
+    [
+      "bariyer:GND",
+      "uno:GND.3",
+      "black",
+      [],
+      "Servonun kahverengi kablosu."
+    ],
+    [
+      "bariyer:V+",
+      "uno:5V",
+      "red",
+      [],
+      "Servonun kırmızı kablosu. Tek küçük servo (SG90) Uno'nun 5V'undan beslenebilir."
+    ],
+    [
+      "sr04:TRIG",
+      "uno:12",
+      "orange",
+      []
+    ],
+    [
+      "sr04:ECHO",
+      "uno:11",
+      "yellow",
+      [],
+      "Uno 5 V çalıştığı için gerilim bölücü gerekmez."
+    ],
+    [
+      "kirmizi:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:7",
+      "green",
+      []
+    ],
+    [
+      "yesil:A",
+      "r2:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r2:2",
+      "uno:4",
+      "green",
+      []
+    ],
+    [
+      "bz1:2",
+      "uno:2",
+      "blue",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ],
+    [
+      "bariyer:PWM",
+      "uno:9",
+      "purple",
+      [],
+      "Servonun turuncu kablosu."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-otopark-bariyeri.ino",
+    "kutuphaneler": [],
+    "icerik": "// Otopark bariyeri: araç yaklaşınca bariyer kalkar, gidince iner.\n#include <Servo.h>  // Arduino IDE ile gelir\n\nconst int TRIG_PIN = 12;\nconst int ECHO_PIN = 11;\nconst int SERVO_PIN = 9;\nconst int KIRMIZI_PIN = 7;\nconst int YESIL_PIN = 4;\nconst int BUZZER_PIN = 2;\n\nconst int ARAC_ESIK_CM = 30;              // bundan yakın cisim \"araç var\" sayılır\nconst int KAPALI_ACI = 0;                 // bariyer yatay\nconst int ACIK_ACI = 90;                  // bariyer dik\nconst unsigned long GECIS_MS = 2000;      // araç gidince bariyer bu kadar bekler\nconst int ADIM_MS = 15;                   // her 2 derecede bekleme (yavaş hareket)\n\nServo bariyer;\nint simdikiAci = KAPALI_ACI;\nbool acik = false;\nunsigned long sonArac = 0;\n\n// Mesafeyi cm olarak döndürür; yankı gelmezse 0.\nlong mesafeOlc() {\n  digitalWrite(TRIG_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG_PIN, LOW);\n  long sure = pulseIn(ECHO_PIN, HIGH, 30000);  // en çok 30 ms bekle (~5 m)\n  return sure / 58;\n}\n\n// Bariyeri hedef açıya yavaşça götürür.\nvoid bariyerGotur(int hedef) {\n  while (simdikiAci != hedef) {\n    if (simdikiAci < hedef) simdikiAci = min(simdikiAci + 2, hedef);\n    else simdikiAci = max(simdikiAci - 2, hedef);\n    bariyer.write(simdikiAci);\n    delay(ADIM_MS);\n  }\n}\n\nvoid bariyerAc() {\n  tone(BUZZER_PIN, 1500, 200);  // kısa bip\n  digitalWrite(KIRMIZI_PIN, LOW);\n  digitalWrite(YESIL_PIN, HIGH);\n  bariyerGotur(ACIK_ACI);\n  acik = true;\n  Serial.println(\"Arac geldi: bariyer acik.\");\n}\n\nvoid bariyerKapat() {\n  bariyerGotur(KAPALI_ACI);\n  digitalWrite(YESIL_PIN, LOW);\n  digitalWrite(KIRMIZI_PIN, HIGH);\n  acik = false;\n  Serial.println(\"Arac gecti: bariyer kapali.\");\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(TRIG_PIN, OUTPUT);\n  pinMode(ECHO_PIN, INPUT);\n  pinMode(KIRMIZI_PIN, OUTPUT);\n  pinMode(YESIL_PIN, OUTPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  bariyer.attach(SERVO_PIN);\n  bariyer.write(KAPALI_ACI);\n  digitalWrite(KIRMIZI_PIN, HIGH);\n  Serial.println(\"Hazir. Bariyer kapali.\");\n}\n\nvoid loop() {\n  long cm = mesafeOlc();\n  bool aracVar = cm > 0 && cm < ARAC_ESIK_CM;\n\n  if (aracVar) {\n    sonArac = millis();\n    if (!acik) bariyerAc();\n  } else if (acik && millis() - sonArac > GECIS_MS) {\n    bariyerKapat();\n  }\n  delay(100);\n}\n"
+  },
+  "montaj": [
+    "Servo koluna dondurma çubuğu yapıştır; bu bariyer olur.",
+    "HC-SR04'ü yolun kenarına, gelen araca bakacak biçimde koy.",
+    "Kırmızı ve yeşil LED'i bariyerin yanına, sürücünün göreceği yere tak.",
+    "Her LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Açılışta kırmızı LED yanıyor, bariyer yatay.",
+    "Elini 20 cm'ye getir: kısa bip, bariyer kalkıyor, yeşil LED yanıyor.",
+    "Elini çek: 2 saniye sonra bariyer iniyor, kırmızı LED yanıyor.",
+    "Seri Port Ekranı (9600) \"Arac geldi\" ve \"Arac gecti\" yazıyor."
+  ],
+  "tanitim": {
+    "amac": "Otopark ve site girişlerindeki bariyerin küçük modeli. Araç yaklaşınca bariyer kalkar, geçince iner.",
+    "nasil": [
+      "HC-SR04 girişteki mesafeyi sürekli ölçer.",
+      "Cisim 30 cm'den yakınsa Arduino aracı var sayar.",
+      "Buzzer kısa öter, servo bariyeri yavaşça kaldırır, yeşil LED yanar.",
+      "Araç gidince 2 saniye beklenir; bariyer iner, kırmızı LED yanar."
+    ],
+    "ogrenilenler": [
+      "Ultrasonik mesafe",
+      "Servo ile yavaş hareket",
+      "Durum değişkeni",
+      "millis() ile süre"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Yol boş (150 cm): bariyer kapalı, kırmızı LED yanar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 150
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Araç geldi (15 cm): bip, bariyer kalkar, yeşil LED yanar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 15
+        }
+      },
+      {
+        "sure": 4500,
+        "yazi": "Araç geçti (150 cm): 2 saniye sonra bariyer iner.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 150
+        }
+      }
+    ]
+  }
+}

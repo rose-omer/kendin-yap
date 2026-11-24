@@ -1,0 +1,249 @@
+{
+  "surum": 1,
+  "id": "esp32-mqtt-guvenlik",
+  "baslik": "MQTT güvenlik sistemi",
+  "ozet": "Kapı açılınca ya da PIR hareket görünce ESP32 MQTT ile alarm mesajı yollar, buzzer öter. Alarm telefondan \"kur\" ve \"coz\" mesajıyla kurulur ve çözülür.",
+  "zorluk": "İleri",
+  "sure": "2 saat",
+  "gereksinimler": [
+    "\"ev/guvenlik/komut\" konusuna \"kur\" gelince alarm kurulur ve LED sürekli yanar.",
+    "\"coz\" gelince alarm çözülür, buzzer susar, LED söner.",
+    "Kapı her açılıp kapandığında \"ev/guvenlik/kapi\" konusuna \"acik\" ya da \"kapali\" gider.",
+    "Alarm kuruluyken kapı açılırsa ya da hareket olursa \"ev/guvenlik/alarm\" konusuna \"kapi\" ya da \"hareket\" gider.",
+    "Alarm çalarken buzzer iki tonla öter ve LED yanıp söner; en çok 20 saniye sürer.",
+    "PIR açılıştan sonraki 30 saniye yok sayılır (ısınma)."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 300,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir",
+      "left": 100,
+      "top": -80,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 140,
+      "top": 170,
+      "attrs": {}
+    },
+    {
+      "type": "ky-modul",
+      "id": "kapi",
+      "left": 480,
+      "top": 40,
+      "attrs": {
+        "baslik": "Manyetik kapı sensörü (MC-38)",
+        "sol": "1,2",
+        "renk": "#64748b",
+        "arama": "manyetik kapı sensörü",
+        "ozet": "Mıknatıs yakınken iki kablo birbirine değer. Bir ucu GND'ye, öbürü INPUT_PULLUP pine gider."
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 470,
+      "top": 250,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 580,
+      "top": 180,
+      "attrs": {
+        "color": "red"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "pir:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pir:VCC",
+      "esp:VIN",
+      "red",
+      [],
+      "PIR 5 V ister. VIN, USB takılıyken 5 V verir."
+    ],
+    [
+      "pir:OUT",
+      "esp:D27",
+      "yellow",
+      [],
+      "PIR çıkışı 3,3 V'tur; ESP32 için güvenli."
+    ],
+    [
+      "bz1:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "bz1:2",
+      "esp:D25",
+      "green",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ],
+    [
+      "kapi:1",
+      "esp:GND.1",
+      "black",
+      [],
+      "Kapı sensörünün iki kablosu eştir; hangisi olursa."
+    ],
+    [
+      "kapi:2",
+      "esp:D19",
+      "blue",
+      [],
+      "Kodda INPUT_PULLUP: kapı açılınca pin HIGH olur."
+    ],
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:2",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:1",
+      "esp:D4",
+      "purple",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-mqtt-guvenlik.ino",
+    "kutuphaneler": [
+      "PubSubClient"
+    ],
+    "icerik": "// MQTT güvenlik sistemi: kapı sensörü ve PIR alarm mesajı yayınlar.\n// \"ev/guvenlik/komut\" konusuna \"kur\" gelince alarm kurulur, \"coz\" gelince çözülür.\n#include <WiFi.h>\n#include <PubSubClient.h>\n\nconst char* AG_ADI = \"EvimWiFi\";               // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";              // kendi Wi-Fi parolan\nconst char* MQTT_SUNUCU = \"broker.hivemq.com\"; // ücretsiz genel sunucu; kendi sunucunu da yazabilirsin\nconst int MQTT_PORT = 1883;\nconst char* MQTT_KIMLIK = \"kendinyap-guvenlik\";\n\nconst char* KONU_KOMUT = \"ev/guvenlik/komut\";  // dinlenir: kur / coz\nconst char* KONU_DURUM = \"ev/guvenlik/durum\";  // yayınlanır: kurulu / cozuldu\nconst char* KONU_ALARM = \"ev/guvenlik/alarm\";  // yayınlanır: kapi / hareket\nconst char* KONU_KAPI = \"ev/guvenlik/kapi\";    // yayınlanır: acik / kapali\n\nconst int KAPI_PIN = 19;    // kapı sensörü (öbür ucu GND)\nconst int PIR_PIN = 27;     // PIR OUT\nconst int BUZZER_PIN = 25;  // buzzer +\nconst int LED_PIN = 4;      // durum LED'i\n\nconst unsigned long PIR_ISINMA_MS = 30000;   // PIR açılışta 30 sn ısınır; bu sürede hareket sayılmaz\nconst unsigned long ALARM_SURE_MS = 20000;   // alarm en çok 20 sn öter\nconst unsigned long KAPI_TITRESIM_MS = 50;   // kapı sensörü titreşimini yok say\n\nWiFiClient wifiIstemci;\nPubSubClient mqtt(wifiIstemci);\n\nbool kurulu = false;\nbool alarmCaliyor = false;\nunsigned long alarmBaslangic = 0;\nunsigned long sonBip = 0;\nbool bipYuksek = false;\nint sonKapi = LOW;\nunsigned long kapiDegisti = 0;\nint sonPir = LOW;\n\nvoid durumYayinla() {\n  mqtt.publish(KONU_DURUM, kurulu ? \"kurulu\" : \"cozuldu\", true);  // kalıcı mesaj: yeni bağlanan da görür\n  Serial.println(kurulu ? \"Alarm kuruldu.\" : \"Alarm cozuldu.\");\n}\n\nvoid alarmBaslat(const char* neden) {\n  mqtt.publish(KONU_ALARM, neden);\n  Serial.printf(\"ALARM: %s\\n\", neden);\n  if (!alarmCaliyor) {\n    alarmCaliyor = true;\n    alarmBaslangic = millis();\n  }\n}\n\nvoid alarmDurdur() {\n  alarmCaliyor = false;\n  noTone(BUZZER_PIN);\n}\n\n// Abone olunan konuya mesaj gelince çağrılır.\nvoid mesajGeldi(char* konu, byte* veri, unsigned int uzunluk) {\n  String mesaj;\n  for (unsigned int i = 0; i < uzunluk; i++) mesaj += (char)veri[i];\n  mesaj.trim();\n  mesaj.toLowerCase();\n  Serial.printf(\"Mesaj: %s = %s\\n\", konu, mesaj.c_str());\n  if (String(konu) != KONU_KOMUT) return;\n  if (mesaj == \"kur\") {\n    kurulu = true;\n    durumYayinla();\n  } else if (mesaj == \"coz\") {\n    kurulu = false;\n    alarmDurdur();\n    durumYayinla();\n  }\n}\n\nvoid mqttBaglan() {\n  while (!mqtt.connected()) {\n    Serial.print(\"MQTT'ye baglaniyor... \");\n    if (mqtt.connect(MQTT_KIMLIK)) {\n      Serial.println(\"tamam\");\n      mqtt.subscribe(KONU_KOMUT);\n      durumYayinla();\n    } else {\n      Serial.println(\"olmadi, 2 sn sonra tekrar\");\n      delay(2000);\n    }\n  }\n}\n\nvoid kapiDenetle() {\n  int kapi = digitalRead(KAPI_PIN);  // HIGH: mıknatıs uzak, kapı açık\n  if (kapi == sonKapi) {\n    kapiDegisti = millis();\n    return;\n  }\n  if (millis() - kapiDegisti < KAPI_TITRESIM_MS) return;\n  sonKapi = kapi;\n  mqtt.publish(KONU_KAPI, kapi == HIGH ? \"acik\" : \"kapali\");\n  Serial.println(kapi == HIGH ? \"Kapi acildi\" : \"Kapi kapandi\");\n  if (kapi == HIGH && kurulu) alarmBaslat(\"kapi\");\n}\n\nvoid pirDenetle() {\n  int pir = digitalRead(PIR_PIN);\n  if (pir == HIGH && sonPir == LOW && millis() > PIR_ISINMA_MS && kurulu) alarmBaslat(\"hareket\");\n  sonPir = pir;\n}\n\n// Alarm çalarken buzzer iki tonla öter, LED hızlı yanıp söner.\n// Kuruluyken LED sürekli yanar, çözülünce söner.\nvoid yerelAlarm() {\n  if (alarmCaliyor && millis() - alarmBaslangic > ALARM_SURE_MS) alarmDurdur();\n  if (alarmCaliyor) {\n    if (millis() - sonBip >= 250) {\n      sonBip = millis();\n      bipYuksek = !bipYuksek;\n      tone(BUZZER_PIN, bipYuksek ? 2200 : 1400, 240);\n      digitalWrite(LED_PIN, bipYuksek ? HIGH : LOW);\n    }\n  } else {\n    digitalWrite(LED_PIN, kurulu ? HIGH : LOW);\n  }\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(KAPI_PIN, INPUT_PULLUP);\n  pinMode(PIR_PIN, INPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  pinMode(LED_PIN, OUTPUT);\n  sonKapi = digitalRead(KAPI_PIN);\n\n  WiFi.begin(AG_ADI, PAROLA);\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  Serial.print(\"Wi-Fi tamam, IP: \");\n  Serial.println(WiFi.localIP());\n  mqtt.setServer(MQTT_SUNUCU, MQTT_PORT);\n  mqtt.setCallback(mesajGeldi);\n  Serial.println(\"PIR 30 sn isiniyor; kapi sensoru hemen calisir.\");\n}\n\nvoid loop() {\n  if (!mqtt.connected()) mqttBaglan();\n  mqtt.loop();\n  kapiDenetle();\n  pirDenetle();\n  yerelAlarm();\n  delay(10);\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "Kapı sensörünün kablolu parçasını kasaya, mıknatısı kapıya vidala. Kapı kapalıyken aralarında 1 cm'den az boşluk kalsın.",
+    "PIR'ı odayı gören bir köşeye, yerden 2 m kadar yukarı koy. Üstündeki iki ayar vidasıyla hassasiyeti ve süreyi ayarla.",
+    "Telefona bir MQTT uygulaması kur (ör. \"MQTT Dash\", \"IoT MQTT Panel\") ve aynı sunucuya bağlan.",
+    "Uygulamada \"ev/guvenlik/komut\" için iki düğme ekle: biri \"kur\", biri \"coz\" göndersin. \"ev/guvenlik/alarm\" konusuna bildirim aç.",
+    "Genel sunucuyu herkes dinleyebilir. Gerçek evde konu adlarını kendine özel yap ya da parolalı kendi sunucunu kullan."
+  ],
+  "testler": [
+    "Uygulamadan \"kur\" yolla: LED sürekli yanar, \"ev/guvenlik/durum\" konusunda \"kurulu\" görünür.",
+    "Mıknatısı uzaklaştır: \"ev/guvenlik/kapi\" konusuna \"acik\", \"ev/guvenlik/alarm\" konusuna \"kapi\" gelir; buzzer öter.",
+    "\"coz\" yolla: buzzer susar, LED söner.",
+    "Alarm çözülüyken kapıyı aç: yalnız \"acik\" mesajı gelir, buzzer ötmez.",
+    "Açılıştan 30 saniye sonra alarmı kur ve PIR'ın önünde el salla: \"hareket\" mesajı gelir."
+  ],
+  "tanitim": {
+    "amac": "Evin ya da dükkânın basit hırsız alarmı. Kapı açılınca ya da odada hareket olunca ESP32 telefona MQTT mesajı yollar ve yerinde öter. Alarmı evden çıkarken telefondan kurar, dönünce çözersin.",
+    "nasil": [
+      "Kapı sensörü ve PIR ESP32'nin girişlerine bağlıdır.",
+      "ESP32 MQTT sunucusuna bağlanır ve \"ev/guvenlik/komut\" konusunu dinler.",
+      "\"kur\" gelince alarm kurulur; LED sürekli yanar.",
+      "Kuruluyken kapı açılır ya da hareket olursa \"ev/guvenlik/alarm\" konusuna mesaj gider, buzzer öter.",
+      "\"coz\" gelince buzzer susar ve alarm çözülür."
+    ],
+    "ogrenilenler": [
+      "MQTT yayınla/abone ol",
+      "Kalıcı (retained) mesaj",
+      "Kenar algılama",
+      "Durum makinesi"
+    ],
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "Wi-Fi ve MQTT sunucusuna bağlanıyor…"
+      },
+      {
+        "sure": 3000,
+        "yazi": "Telefondan \"kur\" geldi: alarm kuruldu, LED yanar.",
+        "eylem": {
+          "tur": "mqtt",
+          "konu": "ev/guvenlik/komut",
+          "veri": "kur"
+        }
+      },
+      {
+        "sure": 5000,
+        "yazi": "Kapı açıldı: \"ev/guvenlik/alarm\" konusuna \"kapi\" gider, buzzer öter.",
+        "eylem": {
+          "tur": "anahtar",
+          "anahtar": "kapi",
+          "deger": 1
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Telefondan \"coz\" geldi: buzzer susar, LED söner.",
+        "eylem": {
+          "tur": "mqtt",
+          "konu": "ev/guvenlik/komut",
+          "veri": "coz"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Kapı kapandı: yalnız \"kapali\" mesajı gider.",
+        "eylem": {
+          "tur": "anahtar",
+          "anahtar": "kapi",
+          "deger": 0
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Alarm yeniden kuruldu.",
+        "eylem": {
+          "tur": "mqtt",
+          "konu": "ev/guvenlik/komut",
+          "veri": "kur"
+        }
+      },
+      {
+        "sure": 12000,
+        "yazi": "PIR ısınıyor: açılıştan sonraki 30 saniyede hareket sayılmaz."
+      },
+      {
+        "sure": 5000,
+        "yazi": "Odada hareket var: \"hareket\" alarmı gider, buzzer öter.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "pir"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "\"coz\" geldi: alarm susar.",
+        "eylem": {
+          "tur": "mqtt",
+          "konu": "ev/guvenlik/komut",
+          "veri": "coz"
+        }
+      }
+    ]
+  }
+}

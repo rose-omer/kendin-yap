@@ -1,0 +1,199 @@
+{
+  "surum": 1,
+  "id": "esp32-ble-kapi-zili",
+  "baslik": "BLE kapı zili",
+  "ozet": "Zil düğmesine basınca telefona BLE ile \"zil\" bildirimi gider ve buzzer ding-dong çalar. Telefondan \"sessiz\" yazınca yalnız LED yanıp söner.",
+  "zorluk": "Orta",
+  "sure": "1,5 saat",
+  "gereksinimler": [
+    "Telefon \"KendinYap-Zil\" cihazına BLE ile bağlanır.",
+    "Düğmeye basınca 1. özellik \"zil\" değerini alır ve telefona bildirim gider.",
+    "Sesli modda buzzer iki tonla çalar ve LED yanar.",
+    "Telefon 2. özelliğe \"sessiz\" yazınca buzzer susar; zil gelince yalnız LED 3 kez yanıp söner.",
+    "\"sesli\" yazınca ses geri gelir.",
+    "Art arda basışlarda zil en çok 3 saniyede bir çalar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "left": 200,
+      "top": 60,
+      "attrs": {
+        "color": "blue"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 330,
+      "top": 20,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 170,
+      "top": 200,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 300,
+      "top": 170,
+      "attrs": {
+        "color": "yellow"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "btn1:2.l",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "btn1:1.l",
+      "esp:D19",
+      "green",
+      [],
+      "Kodda INPUT_PULLUP: basınca pin LOW olur."
+    ],
+    [
+      "bz1:1",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "bz1:2",
+      "esp:D18",
+      "blue",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ],
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:2",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:1",
+      "esp:D4",
+      "orange",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-ble-kapi-zili.ino",
+    "kutuphaneler": [],
+    "icerik": "// BLE kapı zili: düğmeye basınca telefona \"zil\" bildirimi gider, buzzer çalar.\n// Telefondan \"sessiz\" yazılınca buzzer susar, yalnız LED yanıp söner; \"sesli\" ile ses geri gelir.\n// Telefona \"nRF Connect\" ya da \"LightBlue\" uygulamasını kur, KendinYap-Zil'e bağlan.\n#include <BLEDevice.h>\n#include <BLEServer.h>\n#include <BLEUtils.h>\n#include <BLE2902.h>\n\n#define SERVIS_UUID \"6e1a0001-4b2c-4d6a-9f3e-2a7c5b8d1e01\"\n#define ZIL_UUID    \"6e1a0002-4b2c-4d6a-9f3e-2a7c5b8d1e01\"  // okuma + bildirim: \"zil\"\n#define MOD_UUID    \"6e1a0003-4b2c-4d6a-9f3e-2a7c5b8d1e01\"  // yazma: \"sessiz\" / \"sesli\"\n\nconst char* BLE_ADI = \"KendinYap-Zil\";\nconst int DUGME_PIN = 19;   // zil düğmesi (öbür ucu GND)\nconst int BUZZER_PIN = 18;  // buzzer +\nconst int LED_PIN = 4;      // zil LED'i\nconst unsigned long ZIL_ARALIGI_MS = 3000;  // art arda basışlarda en az 3 sn bekle\n\nBLECharacteristic* zilOzelligi;\nBLECharacteristic* modOzelligi;\nbool telefonBagli = false;\nbool sessiz = false;\nint sonDugme = HIGH;\nunsigned long sonZil = 0;\nbool hicCalmadi = true;\n\nclass SunucuOlaylari : public BLEServerCallbacks {\n  void onConnect(BLEServer*) override {\n    telefonBagli = true;\n    Serial.println(\"Telefon baglandi\");\n  }\n  void onDisconnect(BLEServer* s) override {\n    telefonBagli = false;\n    Serial.println(\"Telefon ayrildi\");\n    s->startAdvertising();  // tekrar görünür ol\n  }\n};\n\nclass ModOlaylari : public BLECharacteristicCallbacks {\n  void onWrite(BLECharacteristic* c) override {\n    String deger = c->getValue();\n    deger.trim();\n    deger.toLowerCase();\n    if (deger == \"sessiz\") sessiz = true;\n    else if (deger == \"sesli\") sessiz = false;\n    else return;\n    c->setValue(sessiz ? \"sessiz\" : \"sesli\");\n    Serial.println(sessiz ? \"Mod: sessiz\" : \"Mod: sesli\");\n  }\n};\n\nvoid zilCal() {\n  zilOzelligi->setValue(\"zil\");\n  if (telefonBagli) zilOzelligi->notify();\n  Serial.println(telefonBagli ? \"Zil! Telefona bildirildi.\" : \"Zil! (telefon bagli degil)\");\n\n  if (sessiz) {\n    // Sessiz mod: yalnız LED 3 kez yanıp söner.\n    for (int i = 0; i < 3; i++) {\n      digitalWrite(LED_PIN, HIGH);\n      delay(200);\n      digitalWrite(LED_PIN, LOW);\n      delay(200);\n    }\n  } else {\n    // Ding-dong: iki ton, LED de yanar.\n    digitalWrite(LED_PIN, HIGH);\n    tone(BUZZER_PIN, 1047, 350);\n    delay(400);\n    tone(BUZZER_PIN, 784, 500);\n    delay(550);\n    digitalWrite(LED_PIN, LOW);\n  }\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(DUGME_PIN, INPUT_PULLUP);\n  pinMode(BUZZER_PIN, OUTPUT);\n  pinMode(LED_PIN, OUTPUT);\n\n  BLEDevice::init(BLE_ADI);\n  BLEServer* sunucu = BLEDevice::createServer();\n  sunucu->setCallbacks(new SunucuOlaylari());\n  BLEService* servis = sunucu->createService(SERVIS_UUID);\n\n  zilOzelligi = servis->createCharacteristic(ZIL_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);\n  zilOzelligi->addDescriptor(new BLE2902());\n  zilOzelligi->setValue(\"bekliyor\");\n\n  modOzelligi = servis->createCharacteristic(MOD_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);\n  modOzelligi->setCallbacks(new ModOlaylari());\n  modOzelligi->setValue(\"sesli\");\n\n  servis->start();\n  BLEAdvertising* yayin = BLEDevice::getAdvertising();\n  yayin->addServiceUUID(SERVIS_UUID);\n  BLEDevice::startAdvertising();\n  Serial.printf(\"BLE hazir: %s\\n\", BLE_ADI);\n}\n\nvoid loop() {\n  int dugme = digitalRead(DUGME_PIN);\n  bool basildi = dugme == LOW && sonDugme == HIGH;  // yalnız basıldığı an\n  sonDugme = dugme;\n  if (basildi && (hicCalmadi || millis() - sonZil > ZIL_ARALIGI_MS)) {\n    hicCalmadi = false;\n    sonZil = millis();\n    zilCal();\n  }\n  delay(20);\n}\n"
+  },
+  "montaj": [
+    "Düğmeyi kapının dışına, ESP32'yi içeriye koy. Arada yalnız iki kablo geçer.",
+    "Uzun kabloda düğme takılıyken yanlış zil çalarsa D19 ile 3V3 arasına 10 kΩ dış pull-up ekle.",
+    "Telefona \"nRF Connect\" ya da \"LightBlue\" uygulamasını kur ve \"KendinYap-Zil\"e bağlan.",
+    "Uygulamada 1. özelliğin bildirimini aç (zil simgesi ya da \"Subscribe\").",
+    "2. özelliğe yazı (UTF-8) olarak \"sessiz\" ya da \"sesli\" yaz."
+  ],
+  "testler": [
+    "Telefon bağlıyken düğmeye bas: uygulamada \"zil\" bildirimi görünür, buzzer ding-dong çalar.",
+    "2. özelliğe \"sessiz\" yaz ve düğmeye bas: buzzer susar, LED 3 kez yanıp söner, bildirim yine gelir.",
+    "\"sesli\" yaz ve düğmeye bas: ses geri gelir.",
+    "Düğmeye hızlı hızlı bas: zil 3 saniyede bir defadan çok çalmaz."
+  ],
+  "tanitim": {
+    "amac": "Kablosuz kapı zili. Biri düğmeye basınca ESP32 hem öter hem telefona BLE bildirimi yollar. Bebek uyurken telefondan sessize alırsın; zil yalnız ışıkla haber verir.",
+    "nasil": [
+      "ESP32 \"KendinYap-Zil\" adıyla BLE cihazı olur ve iki özellik açar.",
+      "Düğmeye basılınca 1. özellik \"zil\" olur ve bağlı telefona bildirilir.",
+      "Sesli modda buzzer çalar; sessiz modda yalnız LED yanıp söner.",
+      "Telefon 2. özelliğe \"sessiz\" ya da \"sesli\" yazarak modu değiştirir."
+    ],
+    "ogrenilenler": [
+      "BLE bildirim (notify)",
+      "BLE yazma",
+      "Kenar algılama",
+      "tone()"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Telefon BLE ile bağlandı.",
+        "eylem": {
+          "tur": "blebaglan"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Kapıda biri düğmeye bastı: telefona \"zil\" gider, buzzer ding-dong çalar.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn1"
+        }
+      },
+      {
+        "sure": 1000,
+        "yazi": "Düğme bırakıldı.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn1"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Telefondan \"sessiz\" yazıldı.",
+        "eylem": {
+          "tur": "bleyaz",
+          "no": 1,
+          "veri": "sessiz"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Düğmeye yine basıldı: bildirim gider, yalnız LED yanıp söner.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn1"
+        }
+      },
+      {
+        "sure": 1000,
+        "yazi": "Düğme bırakıldı.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn1"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "\"sesli\" yazıldı: bundan sonra zil yine öter.",
+        "eylem": {
+          "tur": "bleyaz",
+          "no": 1,
+          "veri": "sesli"
+        }
+      }
+    ]
+  }
+}

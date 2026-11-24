@@ -1,0 +1,70 @@
+{
+  "surum": 1,
+  "id": "uno-reaksiyon-oyunu",
+  "baslik": "Reaksiyon oyunu (Uno)",
+  "ozet": "LED rastgele bir anda yanar; butona ne kadar hızlı bastığını milisaniyeyle ölçer.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "Her tur LED 2–5 saniye arası rastgele bir sürede yanar.",
+    "LED yanınca butona basılırsa seri ekran (9600) tepki süresini ms olarak yazar.",
+    "LED yanmadan basılırsa buzzer kısa öter, seri ekran \"Erken\" yazar ve tur baştan başlar.",
+    "Her turdan sonra 2 saniye beklenir, yeni tur başlar."
+  ],
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "left": 0, "top": 200, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "left": 60, "top": 0, "attrs": { "color": "red" } },
+    { "type": "wokwi-resistor", "id": "r1", "left": 52, "top": 115, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-buzzer", "id": "bz1", "left": 150, "top": 20, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "btn1", "left": 290, "top": 60, "attrs": { "color": "red" } }
+  ],
+  "connections": [
+    ["led1:C", "uno:GND.1", "black", [], "LED'in kısa bacağı GND'ye."],
+    ["bz1:1", "uno:GND.1", "black", [], "Buzzer'ın - bacağı."],
+    ["btn1:2.l", "uno:GND.1", "black", [], "Butonun bir bacağı GND'ye."],
+    ["led1:A", "r1:1", "orange", [], "LED'in uzun bacağı dirence."],
+    ["r1:2", "uno:12", "green", []],
+    ["bz1:2", "uno:8", "purple", [], "Buzzer'ın + (uzun) bacağı."],
+    ["btn1:1.l", "uno:2", "blue", [], "Öbür bacak 2. pine. Kod iç pull-up direncini açar."]
+  ],
+  "kod": {
+    "dosya": "uno-reaksiyon-oyunu.ino",
+    "kutuphaneler": [],
+    "icerik": "// Reaksiyon oyunu: LED yanınca butona olabildiğince hızlı bas.\nconst int LED_PIN = 12;\nconst int BUTON_PIN = 2;      // butonun öbür ucu GND'de; iç pull-up açık\nconst int BUZZER_PIN = 8;\n\nconst unsigned long EN_AZ_BEKLE = 2000;   // LED yanmadan önce en kısa bekleme (ms)\nconst unsigned long EN_COK_BEKLE = 5000;  // en uzun bekleme (ms)\nconst unsigned long TUR_ARASI = 2000;     // turlar arası bekleme (ms)\nconst unsigned long CEZA_ARASI = 1000;    // erken basıştan sonra bekleme (ms)\nconst unsigned long TITRESIM_MS = 50;     // buton sıçramasını yok sayma süresi\nconst int UYARI_HZ = 200;                 // erken basış sesi (Hz)\nconst int UYARI_MS = 300;                 // erken basış sesinin süresi\n\nbool basili() {\n  return digitalRead(BUTON_PIN) == LOW;\n}\n\n// Buton bırakılana kadar bekler; bırakınca sıçramayı da bekler.\nvoid birakilmasiniBekle() {\n  while (basili()) {}\n  delay(TITRESIM_MS);\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(LED_PIN, OUTPUT);\n  pinMode(BUTON_PIN, INPUT_PULLUP);\n  randomSeed(analogRead(A0));  // boştaki A0 pini her açılışta farklı bir başlangıç verir\n  Serial.println(\"Reaksiyon oyunu\");\n}\n\nvoid loop() {\n  digitalWrite(LED_PIN, LOW);\n  Serial.println(\"Hazir ol...\");\n\n  // 1. Rastgele bir süre bekle. Bu sırada basılırsa erken sayılır.\n  unsigned long bekleme = random(EN_AZ_BEKLE, EN_COK_BEKLE + 1);\n  unsigned long baslangic = millis();\n  while (millis() - baslangic < bekleme) {\n    if (basili()) {\n      Serial.println(\"Erken! LED yanmadan bastin.\");\n      tone(BUZZER_PIN, UYARI_HZ, UYARI_MS);\n      birakilmasiniBekle();\n      delay(CEZA_ARASI);\n      return;  // tur baştan başlar\n    }\n  }\n\n  // 2. LED'i yak ve basışa kadar geçen süreyi ölç.\n  digitalWrite(LED_PIN, HIGH);\n  unsigned long yandi = millis();\n  while (!basili()) {}\n  unsigned long tepki = millis() - yandi;\n  digitalWrite(LED_PIN, LOW);\n\n  Serial.print(\"Tepki suresi: \");\n  Serial.print(tepki);\n  Serial.println(\" ms\");\n\n  birakilmasiniBekle();\n  delay(TUR_ARASI);\n}\n"
+  },
+  "montaj": [
+    "Butonu breadboard'un ortasındaki boşluğun üstüne tak.",
+    "LED'in uzun bacağına 220 Ω direnç bağla.",
+    "Buzzer'ın uzun bacağı (+) 8. pine gider.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Seri ekranı (9600) aç: \"Hazir ol...\" yazıyor.",
+    "LED yanınca butona bas: seri ekran tepki süresini ms olarak yazıyor.",
+    "LED yanmadan bas: buzzer kısa ötüyor, seri ekran \"Erken\" yazıyor.",
+    "Birkaç tur oyna: LED her seferinde farklı bir anda yanıyor."
+  ],
+  "tanitim": {
+    "amac": "Gözünün ve elinin ne kadar hızlı olduğunu ölçen bir oyun. LED yanınca butona bas; kart süreyi milisaniyeyle söyler. Arkadaşlarınla yarışmak için kullan.",
+    "nasil": [
+      "Kart 2–5 saniye arası rastgele bir süre bekler.",
+      "Bu sırada basarsan buzzer öter: erken bastın.",
+      "Süre dolunca LED yanar ve millis() ile zaman tutulur.",
+      "Butona basınca geçen süre seri ekrana yazılır."
+    ],
+    "ogrenilenler": [
+      "millis() ile süre ölçme",
+      "random()",
+      "while döngüsü",
+      "tone()"
+    ],
+    "demo": [
+      { "sure": 1000, "yazi": "Tur başladı. LED'in yanmasını bekle." },
+      { "sure": 400, "yazi": "Erken basıldı: buzzer öter, seri ekran \"Erken\" yazar.", "eylem": { "tur": "bas", "id": "btn1" } },
+      { "sure": 1500, "yazi": "Erken basıldı: buzzer öter, seri ekran \"Erken\" yazar.", "eylem": { "tur": "birak", "id": "btn1" } },
+      { "sure": 6000, "yazi": "Yeni tur: LED 2–5 saniye içinde rastgele bir anda yanar." },
+      { "sure": 400, "yazi": "LED yanık; butona basıldı. Seri ekran tepki süresini yazar.", "eylem": { "tur": "bas", "id": "btn1" } },
+      { "sure": 3000, "yazi": "Buton bırakıldı. 2 saniye sonra yeni tur başlar.", "eylem": { "tur": "birak", "id": "btn1" } }
+    ]
+  }
+}

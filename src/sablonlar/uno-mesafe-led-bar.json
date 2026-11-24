@@ -1,0 +1,353 @@
+{
+  "surum": 1,
+  "id": "uno-mesafe-led-bar",
+  "baslik": "Dijital metre: LED bar (Uno)",
+  "ozet": "Mesafe 5 LED'lik çubukta gösterilir ve Seri Port Ekranı'na cm olarak yazılır. Çok yakında buzzer öter.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Her LED 20 cm'yi gösterir: 1–20 cm 1 LED, 81 cm ve üstü 5 LED.",
+    "Seri Port Ekranı mesafeyi cm olarak yazar.",
+    "20 cm'den yakında buzzer öter; yaklaştıkça bip sıklaşır.",
+    "Ölçüm yoksa (yankı gelmezse) bütün LED'ler söner."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "sr04",
+      "left": -230,
+      "top": 220,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 20,
+      "top": 20,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 12,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "left": 100,
+      "top": 20,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "left": 92,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "left": 180,
+      "top": 20,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "left": 172,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led4",
+      "left": 260,
+      "top": 20,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r4",
+      "left": 252,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led5",
+      "left": 340,
+      "top": 20,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r5",
+      "left": 332,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 340,
+      "top": 230,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "sr04:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "sr04:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "led2:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "led3:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "led4:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "led5:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED'in kısa bacağı."
+    ],
+    [
+      "bz1:1",
+      "uno:GND.1",
+      "black",
+      [],
+      "Buzzer'ın - (kısa) bacağı."
+    ],
+    [
+      "sr04:TRIG",
+      "uno:12",
+      "orange",
+      []
+    ],
+    [
+      "sr04:ECHO",
+      "uno:11",
+      "yellow",
+      [],
+      "Uno 5 V çalıştığı için gerilim bölücü gerekmez."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:8",
+      "green",
+      []
+    ],
+    [
+      "led2:A",
+      "r2:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r2:2",
+      "uno:7",
+      "green",
+      []
+    ],
+    [
+      "led3:A",
+      "r3:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r3:2",
+      "uno:6",
+      "green",
+      []
+    ],
+    [
+      "led4:A",
+      "r4:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r4:2",
+      "uno:5",
+      "green",
+      []
+    ],
+    [
+      "led5:A",
+      "r5:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "r5:2",
+      "uno:4",
+      "green",
+      []
+    ],
+    [
+      "bz1:2",
+      "uno:3",
+      "blue",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-mesafe-led-bar.ino",
+    "kutuphaneler": [],
+    "icerik": "// Dijital metre: HC-SR04 mesafesini 5 LED'lik çubukta ve seri ekranda gösterir.\nconst int TRIG_PIN = 12;\nconst int ECHO_PIN = 11;\nconst int BUZZER_PIN = 3;\nconst int LED_SAYISI = 5;\nconst int LEDLER[LED_SAYISI] = {8, 7, 6, 5, 4};  // soldan sağa: 1. LED ... 5. LED\n\nconst int LED_BASI_CM = 20;                // her LED 20 cm gösterir\nconst int ALARM_CM = 20;                   // bundan yakında buzzer öter\nconst unsigned long OLCUM_MS = 100;        // ölçüm aralığı\nconst unsigned long YAZDIR_MS = 500;       // seri ekrana yazma aralığı\n\nlong cm = 0;\nunsigned long sonOlcum = 0;\nunsigned long sonYazdir = 0;\nunsigned long sonBip = 0;\n\n// Mesafeyi cm olarak döndürür; yankı gelmezse 0.\nlong mesafeOlc() {\n  digitalWrite(TRIG_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG_PIN, LOW);\n  long sure = pulseIn(ECHO_PIN, HIGH, 30000);  // en çok 30 ms bekle (~5 m)\n  return sure / 58;\n}\n\n// Mesafeye göre kaç LED yanacağını hesaplar ve LED'leri yakar.\nvoid cubukGoster(long mesafe) {\n  int yanan = 0;\n  if (mesafe > 0) yanan = (mesafe + LED_BASI_CM - 1) / LED_BASI_CM;  // yukarı yuvarla\n  if (yanan > LED_SAYISI) yanan = LED_SAYISI;\n  for (int i = 0; i < LED_SAYISI; i++) {\n    digitalWrite(LEDLER[i], i < yanan ? HIGH : LOW);\n  }\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(TRIG_PIN, OUTPUT);\n  pinMode(ECHO_PIN, INPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  for (int i = 0; i < LED_SAYISI; i++) pinMode(LEDLER[i], OUTPUT);\n  Serial.println(\"Dijital metre hazir.\");\n}\n\nvoid loop() {\n  unsigned long simdi = millis();\n\n  if (simdi - sonOlcum >= OLCUM_MS) {\n    sonOlcum = simdi;\n    cm = mesafeOlc();\n    cubukGoster(cm);\n  }\n\n  if (simdi - sonYazdir >= YAZDIR_MS) {\n    sonYazdir = simdi;\n    if (cm > 0) {\n      Serial.print(\"Mesafe: \");\n      Serial.print(cm);\n      Serial.println(\" cm\");\n    } else {\n      Serial.println(\"Olcum yok\");\n    }\n  }\n\n  // Çok yakında bip: aralık mesafeyle kısalır (5 cm'de 125 ms, 20 cm'de 500 ms).\n  if (cm > 0 && cm < ALARM_CM) {\n    unsigned long aralik = cm * 25;\n    if (aralik < 80) aralik = 80;\n    if (simdi - sonBip >= aralik) {\n      sonBip = simdi;\n      tone(BUZZER_PIN, 2000, 50);\n    }\n  }\n}\n"
+  },
+  "montaj": [
+    "LED'leri breadboard'a yan yana diz: soldan sağa kırmızı, sarı, sarı, yeşil, yeşil.",
+    "Her LED'in uzun bacağına 220 Ω direnç bağla; kısa bacakları GND hattına al.",
+    "HC-SR04'ü breadboard'un kenarına, \"gözleri\" dışa bakacak biçimde tak.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Seri Port Ekranı (9600) her yarım saniyede mesafeyi cm olarak yazıyor.",
+    "Elini 90 cm'ye koy: 5 LED yanıyor.",
+    "Elini 30 cm'ye getir: 2 LED yanıyor.",
+    "Elini 10 cm'ye getir: 1 LED yanıyor, buzzer kesik kesik ötüyor.",
+    "Elini 4 cm'ye getir: bip çok sıklaşıyor."
+  ],
+  "tanitim": {
+    "amac": "Mesafeyi ışık çubuğuyla gösteren dijital metre. Raf ölçme, robot engel göstergesi ya da garaj uyarısı için kullanılır.",
+    "nasil": [
+      "HC-SR04 her 100 ms'de mesafeyi ölçer.",
+      "Arduino mesafeyi 20 cm'lik dilimlere böler; her dilim bir LED yakar.",
+      "Mesafe Seri Port Ekranı'na cm olarak yazılır.",
+      "20 cm'den yakında buzzer öter; engel yaklaştıkça bip sıklaşır."
+    ],
+    "ogrenilenler": [
+      "Dizi (array) ile çok LED",
+      "millis() ile beklemesiz döngü",
+      "Ultrasonik mesafe",
+      "tone"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Engel 90 cm'de: 5 LED yanar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 90
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Engel 50 cm'de: 3 LED yanar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 50
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Engel 15 cm'de: 1 LED yanar, buzzer yavaş öter.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 15
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Engel 4 cm'de: buzzer çok hızlı öter.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 4
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Engel kalktı (150 cm): 5 LED yanar, ses kesilir.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 150
+        }
+      }
+    ]
+  }
+}

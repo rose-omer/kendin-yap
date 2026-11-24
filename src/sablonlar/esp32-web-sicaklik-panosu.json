@@ -1,0 +1,126 @@
+{
+  "surum": 1,
+  "id": "esp32-web-sicaklik-panosu",
+  "baslik": "Web sıcaklık panosu",
+  "ozet": "DHT22 sıcaklığı ve nemi ölçer. ESP32 bunları çubuklu bir web sayfasında canlı gösterir; en düşük ve en yüksek değeri de tutar.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Sayfada sıcaklık (°C) ve nem (%) büyük yazıyla ve çubukla görünür.",
+    "Sayfa kendini yenilemeden 2 saniyede bir güncellenir.",
+    "Açılıştan beri en düşük ve en yüksek sıcaklık ve nem görünür.",
+    "Sensör okunamazsa sayfada uyarı çıkar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "left": 200,
+      "top": 40,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "dht:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "dht:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "dht:SDA",
+      "esp:D4",
+      "green",
+      [],
+      "Çıplak sensörse SDA ile VCC arasına 10 kΩ direnç koy."
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-web-sicaklik-panosu.ino",
+    "kutuphaneler": [
+      "DHT sensor library (Adafruit)",
+      "Adafruit Unified Sensor"
+    ],
+    "icerik": "// Web sıcaklık panosu: DHT22 ölçer, ESP32 web sayfasında canlı gösterir.\n#include <WiFi.h>\n#include <WebServer.h>\n#include <DHT.h>\n\nconst char* AG_ADI = \"EvimWiFi\";     // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";    // kendi Wi-Fi parolan\nconst int DHT_PIN = 4;\nconst unsigned long OLCUM_ARASI_MS = 2000;  // DHT22 en sık 2 sn'de bir okunur\n\nWebServer sunucu(80);\nDHT dht(DHT_PIN, DHT22);\nfloat sicaklik = NAN, nem = NAN;\n// Açılıştan beri en düşük ve en yüksek değerler.\nfloat enAzS = NAN, enCokS = NAN, enAzN = NAN, enCokN = NAN;\nunsigned long sonOlcum = 0;\nbool ilkOlcum = true;\n\n// Sayfa her 2 sn'de /veri adresinden JSON çeker ve çubukları günceller.\nconst char SAYFA[] PROGMEM = R\"HTML(<!doctype html>\n<html><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Sıcaklık panosu</title>\n<style>\nbody{font-family:sans-serif;max-width:420px;margin:auto;padding:16px}\n.kart{border:1px solid #ccc;border-radius:12px;padding:12px 16px;margin:12px 0}\n.deger{font-size:40px;font-weight:bold}\n.cubuk{height:14px;background:#eee;border-radius:7px;overflow:hidden;margin:8px 0}\n.dolu{height:100%;width:0;transition:width .5s}\n.kucuk{color:#555;font-size:14px}\n</style></head><body>\n<h1>Sıcaklık panosu</h1>\n<div class=\"kart\">Sıcaklık<div class=\"deger\" id=\"s\">--</div>\n<div class=\"cubuk\"><div class=\"dolu\" id=\"sc\" style=\"background:#ea580c\"></div></div>\n<div class=\"kucuk\">En düşük <b id=\"sa\">--</b> · En yüksek <b id=\"sy\">--</b></div></div>\n<div class=\"kart\">Nem<div class=\"deger\" id=\"n\">--</div>\n<div class=\"cubuk\"><div class=\"dolu\" id=\"nc\" style=\"background:#2563eb\"></div></div>\n<div class=\"kucuk\">En düşük <b id=\"na\">--</b> · En yüksek <b id=\"ny\">--</b></div></div>\n<p class=\"kucuk\" id=\"durum\">Bekleniyor...</p>\n<script>\nvar yaz = function (id, v, birim) { document.getElementById(id).textContent = v === null ? '--' : v.toFixed(1) + birim; };\nvar cubuk = function (id, oran) { document.getElementById(id).style.width = Math.max(0, Math.min(100, oran)) + '%'; };\nvar yenile = function () {\n  fetch('/veri').then(function (r) { return r.json(); }).then(function (d) {\n    yaz('s', d.sicaklik, ' °C'); yaz('sa', d.enAzS, ' °C'); yaz('sy', d.enCokS, ' °C');\n    yaz('n', d.nem, ' %'); yaz('na', d.enAzN, ' %'); yaz('ny', d.enCokN, ' %');\n    cubuk('sc', d.sicaklik === null ? 0 : d.sicaklik * 2);   // 0-50 °C -> %0-100\n    cubuk('nc', d.nem === null ? 0 : d.nem);\n    document.getElementById('durum').textContent = d.sicaklik === null\n      ? 'Sensör okunamadı. Kabloları kontrol et.'\n      : 'Son güncelleme: çalışma süresi ' + d.sure + ' sn';\n  }).catch(function () { document.getElementById('durum').textContent = 'ESP32 cevap vermedi.'; });\n};\nyenile();\nsetInterval(yenile, 2000);\n</script></body></html>)HTML\";\n\nvoid olc() {\n  float s = dht.readTemperature();\n  float n = dht.readHumidity();\n  if (isnan(s) || isnan(n)) {\n    Serial.println(\"DHT22 okunamadi.\");\n    sicaklik = NAN;\n    nem = NAN;\n    return;\n  }\n  sicaklik = s;\n  nem = n;\n  if (isnan(enAzS) || s < enAzS) enAzS = s;\n  if (isnan(enCokS) || s > enCokS) enCokS = s;\n  if (isnan(enAzN) || n < enAzN) enAzN = n;\n  if (isnan(enCokN) || n > enCokN) enCokN = n;\n  Serial.printf(\"Sicaklik: %.1f C  Nem: %.0f %%\\n\", s, n);\n}\n\n// Ölçüm yoksa JSON'a null yaz.\nString sayi(float v) {\n  return isnan(v) ? String(\"null\") : String(v, 1);\n}\n\nvoid anaSayfa() {\n  sunucu.send(200, \"text/html\", SAYFA);\n}\n\nvoid veri() {\n  String j = \"{\\\"sicaklik\\\":\";\n  j += sayi(sicaklik);\n  j += \",\\\"nem\\\":\";\n  j += sayi(nem);\n  j += \",\\\"enAzS\\\":\";\n  j += sayi(enAzS);\n  j += \",\\\"enCokS\\\":\";\n  j += sayi(enCokS);\n  j += \",\\\"enAzN\\\":\";\n  j += sayi(enAzN);\n  j += \",\\\"enCokN\\\":\";\n  j += sayi(enCokN);\n  j += \",\\\"sure\\\":\";\n  j += millis() / 1000;\n  j += \"}\";\n  sunucu.send(200, \"application/json\", j);\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  dht.begin();\n\n  WiFi.mode(WIFI_STA);\n  WiFi.begin(AG_ADI, PAROLA);\n  Serial.print(\"Wi-Fi'ye baglaniyor\");\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  Serial.print(\"Baglandi. Tarayicida ac: http://\");\n  Serial.println(WiFi.localIP());\n\n  sunucu.on(\"/\", anaSayfa);\n  sunucu.on(\"/veri\", veri);\n  sunucu.begin();\n}\n\nvoid loop() {\n  sunucu.handleClient();\n  // delay() yerine millis(): ölçüm beklerken sunucu cevap vermeye devam eder.\n  if (ilkOlcum || millis() - sonOlcum >= OLCUM_ARASI_MS) {\n    ilkOlcum = false;\n    sonOlcum = millis();\n    olc();\n  }\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "DHT22'yi 3V3, GND ve D4 ile bağla; pin adlarını modülün üstünden oku.",
+    "Kodu yükle, seri ekrandaki IP adresini telefonda aç (telefon aynı Wi-Fi'de olmalı)."
+  ],
+  "testler": [
+    "Simülasyonda Wi-Fi panelindeki sayfada sıcaklık ve nem görünüyor.",
+    "Kontrol panelinde sıcaklığı 35 °C yap: 2 saniye içinde sayfa ve çubuk değişiyor, \"En yüksek\" 35 oluyor.",
+    "Sıcaklığı 15 °C yap: \"En düşük\" 15 oluyor.",
+    "Tarayıcıda /veri adresini aç: JSON görünüyor."
+  ],
+  "tanitim": {
+    "amac": "Evdeki sıcaklığı ve nemi telefondan izleyen küçük pano. Sayfa kendiliğinden yenilenir ve günün en düşük ve en yüksek değerini tutar. Bebek odası, sera ya da sunucu dolabı için uygundur.",
+    "nasil": [
+      "DHT22 sıcaklığı ve nemi ölçer, tek kabloyla (D4) ESP32'ye gönderir.",
+      "ESP32 2 saniyede bir ölçer ve en düşük ile en yüksek değeri saklar.",
+      "Web sayfası her 2 saniyede /veri adresinden JSON çeker.",
+      "Sayfa değerleri yazar ve çubukların boyunu ayarlar."
+    ],
+    "ogrenilenler": [
+      "JSON veri",
+      "fetch ve setInterval",
+      "millis ile zamanlama",
+      "En az / en çok tutma"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "ESP32 Wi-Fi'ye bağlanıyor ve ilk ölçümü yapıyor."
+      },
+      {
+        "sure": 3000,
+        "yazi": "Hava ısındı: 31 °C. Pano 2 sn içinde güncellenir; en yüksek 31 olur.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 31
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Nem %80'e çıktı: mavi çubuk uzar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:nem",
+          "deger": 80
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Serinledi: 18 °C. En düşük 18 olur.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 18
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Sayfa /veri adresinden bu JSON'u çeker.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/veri"
+        }
+      }
+    ]
+  }
+}

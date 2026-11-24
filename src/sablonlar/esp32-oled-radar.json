@@ -1,0 +1,238 @@
+{
+  "surum": 1,
+  "id": "esp32-oled-radar",
+  "baslik": "OLED ekranlı mini radar",
+  "ozet": "Servo, HC-SR04 mesafe sensörünü sağa sola çevirir. OLED ekranda radar yelpazesi, tarama çizgisi ve bulunan cisimler çizilir.",
+  "zorluk": "İleri",
+  "sure": "2 saat",
+  "gereksinimler": [
+    "Servo 15° ile 165° arasında durmadan sağa sola döner.",
+    "Ekranda üç mesafe halkası ve dönen bir tarama çizgisi görünür.",
+    "100 cm içindeki cisimler, açısına ve uzaklığına göre nokta olarak çizilir.",
+    "Üst satırda o anki açı ve mesafe yazar.",
+    "Her tarama sonunda seri ekrana en yakın cismin uzaklığı ve açısı yazılır.",
+    "HC-SR04'ün 5 V ECHO sinyali ESP32'ye gerilim bölücüyle (1 kΩ + 2 kΩ) gelir."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 300,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "sr04",
+      "left": 60,
+      "top": -100,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 120,
+      "top": 60,
+      "attrs": {
+        "value": "1000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "left": 120,
+      "top": 120,
+      "attrs": {
+        "value": "2000"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "left": 100,
+      "top": 300,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "left": 460,
+      "top": 60,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "sr04:VCC",
+      "esp:VIN",
+      "red",
+      [],
+      "HC-SR04 5 V ister. VIN, USB takılıyken 5 V verir."
+    ],
+    [
+      "sr04:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "servo1:V+",
+      "esp:VIN",
+      "red",
+      [],
+      "Servonun kırmızı kablosu."
+    ],
+    [
+      "servo1:GND",
+      "esp:GND.2",
+      "black",
+      [],
+      "Servonun kahverengi kablosu."
+    ],
+    [
+      "oled:VIN",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "oled:DATA",
+      "esp:D21",
+      "blue",
+      [],
+      "Modülde SDA yazar."
+    ],
+    [
+      "oled:CLK",
+      "esp:D22",
+      "yellow",
+      [],
+      "Modülde SCL yazar."
+    ],
+    [
+      "servo1:PWM",
+      "esp:D13",
+      "orange",
+      [],
+      "Servonun turuncu kablosu."
+    ],
+    [
+      "sr04:TRIG",
+      "esp:D26",
+      "green",
+      [],
+      "3,3 V tetik sinyali HC-SR04 için yeterli."
+    ],
+    [
+      "sr04:ECHO",
+      "r1:1",
+      "purple",
+      [],
+      "ECHO 5 V verir; önce 1 kΩ dirençten geçer."
+    ],
+    [
+      "r2:1",
+      "r1:2",
+      "purple",
+      [],
+      "İki direncin birleştiği nokta. 5 V burada yaklaşık 3,3 V olur."
+    ],
+    [
+      "r2:2",
+      "esp:GND.2",
+      "black",
+      [],
+      "2 kΩ direncin öbür ucu GND'ye. 2 kΩ yoksa iki 1 kΩ'u seri bağla."
+    ],
+    [
+      "r1:2",
+      "esp:D27",
+      "purple",
+      [],
+      "Bölücünün orta noktası D27'ye."
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-oled-radar.ino",
+    "kutuphaneler": [
+      "ESP32Servo",
+      "Adafruit SSD1306",
+      "Adafruit GFX Library"
+    ],
+    "icerik": "// OLED radar: servo HC-SR04'ü sağa sola çevirir; ekranda radar yelpazesi ve cisimler çizilir.\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n#include <ESP32Servo.h>\n\nconst int SERVO_PIN = 13;\nconst int TRIG_PIN = 26;\nconst int ECHO_PIN = 27;        // HC-SR04 ECHO, gerilim bölücüden (5 V -> 3,3 V) gelir\nconst int SDA_PIN = 21;\nconst int SCL_PIN = 22;\nconst int ACI_BAS = 15;         // taramanın başladığı açı\nconst int ACI_SON = 165;        // taramanın bittiği açı\nconst int ADIM = 3;             // her adımda kaç derece dönsün\nconst int BEKLEME_MS = 30;      // servo yeni açıya otursun diye bekleme\nconst int MENZIL_CM = 100;      // ekranın dış halkası bu mesafe; ötesi gösterilmez\n\nAdafruit_SSD1306 ekran(128, 64, &Wire, -1);\nServo servo;\nconst int MERKEZ_X = 64;        // radarın merkezi: ekranın alt ortası\nconst int MERKEZ_Y = 63;\nconst int YARICAP = 54;         // üstte yazıya 9 piksel kalır\nint mesafeler[181];             // her açının son ölçümü (cm); -1 = cisim yok\nint aci = ACI_BAS;\nint yon = 1;\nint enYakinCm = -1;\nint enYakinAci = 0;\n\n// Mesafeyi cm olarak döndürür; yankı yoksa -1.\nint mesafeOlc() {\n  digitalWrite(TRIG_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG_PIN, LOW);\n  unsigned long sure = pulseIn(ECHO_PIN, HIGH, 30000);\n  if (sure == 0) return -1;\n  return (int)(sure / 58);\n}\n\n// Açı (derece) ve yarıçaptan ekran noktası. 0 derece sağda, 180 derece solda.\nvoid noktaBul(int a, int r, int* x, int* y) {\n  float rad = a * DEG_TO_RAD;\n  *x = MERKEZ_X + (int)lround(r * cos(rad));\n  *y = MERKEZ_Y - (int)lround(r * sin(rad));\n}\n\nvoid ciz(int cm) {\n  int x, y, x2, y2;\n  ekran.clearDisplay();\n  // Mesafe halkaları: menzilin üçte biri, üçte ikisi ve tamamı.\n  for (int i = 1; i <= 3; i++) ekran.drawCircle(MERKEZ_X, MERKEZ_Y, YARICAP * i / 3, SSD1306_WHITE);\n  ekran.drawFastHLine(0, MERKEZ_Y, 128, SSD1306_WHITE);\n\n  // Cisimler: noktayı çiz, arkasını dış halkaya kadar çizgiyle doldur.\n  for (int a = ACI_BAS; a <= ACI_SON; a += ADIM) {\n    int m = mesafeler[a];\n    if (m <= 0 || m > MENZIL_CM) continue;\n    noktaBul(a, m * YARICAP / MENZIL_CM, &x, &y);\n    noktaBul(a, YARICAP, &x2, &y2);\n    ekran.drawLine(x, y, x2, y2, SSD1306_WHITE);\n    ekran.fillCircle(x, y, 1, SSD1306_WHITE);\n  }\n\n  // Tarama çizgisi.\n  noktaBul(aci, YARICAP, &x, &y);\n  ekran.drawLine(MERKEZ_X, MERKEZ_Y, x, y, SSD1306_WHITE);\n\n  // Üst satır: açı solda, mesafe sağda. OLED'de derece işareti yok; \"dr\" yazılır.\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  ekran.printf(\"%3d dr\", aci);\n  ekran.setCursor(80, 0);\n  if (cm > 0 && cm <= MENZIL_CM) ekran.printf(\"%3d cm\", cm);\n  else ekran.print(\" -- cm\");\n  ekran.display();\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(TRIG_PIN, OUTPUT);\n  pinMode(ECHO_PIN, INPUT);\n  for (int i = 0; i <= 180; i++) mesafeler[i] = -1;\n\n  Wire.begin(SDA_PIN, SCL_PIN);\n  if (!ekran.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {\n    Serial.println(\"OLED bulunamadi. Kablolari ve 0x3C adresini kontrol et.\");\n    while (true) delay(1000);\n  }\n  ekran.setTextColor(SSD1306_WHITE);\n\n  servo.setPeriodHertz(50);\n  servo.attach(SERVO_PIN, 500, 2400);\n  servo.write(aci);\n  delay(500);\n  Serial.println(\"Radar basladi.\");\n}\n\nvoid loop() {\n  servo.write(aci);\n  delay(BEKLEME_MS);\n  int cm = mesafeOlc();\n  mesafeler[aci] = cm;\n  if (cm > 0 && cm <= MENZIL_CM && (enYakinCm < 0 || cm < enYakinCm)) {\n    enYakinCm = cm;\n    enYakinAci = aci;\n  }\n  ciz(cm);\n\n  // Sonraki açı. Uca gelince yön değişir ve tarama özeti yazılır.\n  aci += yon * ADIM;\n  if (aci > ACI_SON || aci < ACI_BAS) {\n    yon = -yon;\n    aci += 2 * yon * ADIM;\n    if (enYakinCm > 0) Serial.printf(\"Tarama bitti. En yakin cisim: %d cm, %d derece\\n\", enYakinCm, enYakinAci);\n    else Serial.println(\"Tarama bitti. Menzilde cisim yok.\");\n    enYakinCm = -1;\n  }\n}\n"
+  },
+  "montaj": [
+    "HC-SR04'ü servonun koluna bant ya da tutucu ile sabitle; \"gözleri\" öne baksın.",
+    "Servo dönerken kablolar gerilmesin; sensör kablolarını gevşek bırak.",
+    "Gerilim bölücüyü breadboard'da kur: ECHO → 1 kΩ → orta nokta → 2 kΩ → GND. Orta noktayı D27'ye bağla.",
+    "OLED'i 3V3, GND, SDA (D21) ve SCL (D22) ile bağla.",
+    "Kart yeniden başlıyorsa servoyu ayrı 5 V kaynaktan besle; GND'leri birleştir."
+  ],
+  "testler": [
+    "Servo 15° ile 165° arasında gidip geliyor; ekrandaki tarama çizgisi de onunla dönüyor.",
+    "Simülasyonda mesafeyi 40 cm yap: tarama geçtikçe ekranda noktalar bir yay çiziyor.",
+    "Mesafeyi 150 cm yap: noktalar tarama geçtikçe siliniyor (menzil dışı).",
+    "Seri ekranda her tarama sonunda \"Tarama bitti\" satırı çıkıyor.",
+    "Gerçek kartta elini sensörün önünde tut: ekranda elin olduğu açıda nokta çıkıyor."
+  ],
+  "tanitim": {
+    "amac": "Gemi ve uçak radarlarının masa üstü modeli. Servo mesafe sensörünü sağa sola çevirir; ekran hangi açıda ne kadar uzakta cisim olduğunu çizer. Robotlarda engel haritası çıkarmanın ilk adımıdır.",
+    "nasil": [
+      "Servo sensörü 3 derecelik adımlarla 15°–165° arasında çevirir.",
+      "Her adımda HC-SR04 ses dalgası gönderir; yankının süresinden mesafe hesaplanır.",
+      "ESP32 her açının son mesafesini bir dizide saklar.",
+      "OLED'e halkaları, tarama çizgisini ve 100 cm içindeki cisimleri çizer (açı → yön, mesafe → merkezden uzaklık).",
+      "5 V ECHO sinyali iki dirençle 3,3 V'a düşürülür; ESP32 pini korunur."
+    ],
+    "ogrenilenler": [
+      "Servo ile tarama",
+      "Ultrasonik ölçüm",
+      "sin / cos ile çizim",
+      "Gerilim bölücü"
+    ],
+    "demo": [
+      {
+        "sure": 4000,
+        "yazi": "Önde cisim yok (150 cm, menzil dışı): radar boş tarar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 150
+        }
+      },
+      {
+        "sure": 4500,
+        "yazi": "40 cm'de bir engel: tarama geçtikçe noktalar belirir (simülasyonda her açıda aynı mesafe, bu yüzden bir yay).",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 40
+        }
+      },
+      {
+        "sure": 4500,
+        "yazi": "Engel yaklaştı (15 cm): noktalar merkeze yaklaşır.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 15
+        }
+      },
+      {
+        "sure": 4500,
+        "yazi": "Engel gitti: noktalar tarama geçtikçe silinir.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 150
+        }
+      }
+    ]
+  }
+}

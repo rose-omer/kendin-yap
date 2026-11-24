@@ -1,0 +1,182 @@
+{
+  "surum": 1,
+  "id": "esp32-ap-mod-isik",
+  "baslik": "Kendi ağını açan ışık",
+  "ozet": "ESP32 erişim noktası (AP) modunda \"KendinYap-ESP32\" adlı kendi Wi-Fi ağını açar. Telefonla bu ağa bağlanıp 192.168.4.1 sayfasından iki LED'i yakar, birinin parlaklığını ayarlarsın.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "ESP32 modem olmadan \"KendinYap-ESP32\" adlı ağı açar; parola \"kendinyap123\".",
+    "Bu ağa bağlanan telefon http://192.168.4.1 sayfasını açar.",
+    "\"LED 1\" ve \"LED 2\" düğmeleri LED'leri yakıp söndürür; düğme son durumu yazar.",
+    "Kaydırıcı ve \"Ayarla\" düğmesi LED 2'nin parlaklığını 0-255 arasında ayarlar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 170,
+      "top": 100,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 270,
+      "top": 40,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "left": 170,
+      "top": 210,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "left": 270,
+      "top": 160,
+      "attrs": {
+        "color": "white"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:2",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:1",
+      "esp:D19",
+      "orange",
+      []
+    ],
+    [
+      "led2:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led2:A",
+      "r2:2",
+      "blue",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r2:1",
+      "esp:D4",
+      "blue",
+      [],
+      "D4 PWM verir; parlaklık buradan ayarlanır."
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-ap-mod-isik.ino",
+    "kutuphaneler": [],
+    "icerik": "// Erişim noktası (AP) modu: ESP32 kendi Wi-Fi ağını açar; modem gerekmez.\n// Telefonla \"KendinYap-ESP32\" ağına bağlan, tarayıcıda http://192.168.4.1 adresini aç.\n// Not: ledcAttach için Arduino IDE'de ESP32 kart paketi 3.x gerekir.\n#include <WiFi.h>\n#include <WebServer.h>\n\nconst char* AP_ADI = \"KendinYap-ESP32\";   // ESP32'nin açacağı ağın adı\nconst char* AP_PAROLA = \"kendinyap123\";   // en az 8 karakter; boş bırakırsan ağ şifresiz olur\nconst int LED1_PIN = 19;   // aç/kapat LED'i\nconst int LED2_PIN = 4;    // parlaklığı ayarlanan LED\nconst int PWM_FREKANS = 5000;\nconst int PWM_COZUNURLUK = 8;  // 0-255\n\nWebServer sunucu(80);\nbool led1Acik = false;\nbool led2Acik = false;\nint parlaklik = 128;  // LED 2 parlaklığı (0-255)\n\nvoid ledleriYaz() {\n  digitalWrite(LED1_PIN, led1Acik ? HIGH : LOW);\n  ledcWrite(LED2_PIN, led2Acik ? parlaklik : 0);\n}\n\nString dugme(const char* yol, const char* yazi, bool acik) {\n  String renk = acik ? \"#16a34a\" : \"#64748b\";\n  return String(\"<a href='\") + yol + \"' style='background:\" + renk + \"'>\" + yazi + (acik ? \": AÇIK\" : \": KAPALI\") + \"</a>\";\n}\n\nString sayfa() {\n  String s = \"<!doctype html><html><head><meta charset='utf-8'>\";\n  s += \"<meta name='viewport' content='width=device-width,initial-scale=1'><title>ESP32 ışık</title>\";\n  s += \"<style>body{font-family:sans-serif;text-align:center;padding:16px}\";\n  s += \"a{display:block;margin:12px auto;max-width:260px;padding:14px;border-radius:10px;color:#fff;text-decoration:none;font-size:20px}\";\n  s += \"input[type=range]{width:240px}button{padding:10px 24px;font-size:18px;border-radius:8px}</style>\";\n  s += \"</head><body><h1>ESP32 ışık kontrolü</h1>\";\n  s += \"<p>Ağ: \" + String(AP_ADI) + \" · Adres: \" + WiFi.softAPIP().toString() + \"</p>\";\n  s += dugme(\"/led1\", \"LED 1\", led1Acik);\n  s += dugme(\"/led2\", \"LED 2\", led2Acik);\n  s += \"<form action='/parlaklik'><p>LED 2 parlaklığı: <b>\" + String(parlaklik * 100 / 255) + \" %</b></p>\";\n  s += \"<input type='range' name='deger' min='0' max='255' value='\" + String(parlaklik) + \"'><br><br>\";\n  s += \"<button type='submit'>Ayarla</button></form></body></html>\";\n  return s;\n}\n\nvoid anaSayfaya() {\n  sunucu.sendHeader(\"Location\", \"/\");\n  sunucu.send(303);\n}\n\nvoid anaSayfa() { sunucu.send(200, \"text/html\", sayfa()); }\n\nvoid led1Degistir() {\n  led1Acik = !led1Acik;\n  ledleriYaz();\n  Serial.println(led1Acik ? \"LED 1 acik\" : \"LED 1 kapali\");\n  anaSayfaya();\n}\n\nvoid led2Degistir() {\n  led2Acik = !led2Acik;\n  if (led2Acik && parlaklik == 0) parlaklik = 128;  // 0'da açılırsa hiç yanmaz\n  ledleriYaz();\n  Serial.println(led2Acik ? \"LED 2 acik\" : \"LED 2 kapali\");\n  anaSayfaya();\n}\n\nvoid parlaklikAyarla() {\n  if (sunucu.hasArg(\"deger\")) {\n    parlaklik = constrain(sunucu.arg(\"deger\").toInt(), 0, 255);\n    led2Acik = parlaklik > 0;\n    ledleriYaz();\n    Serial.printf(\"LED 2 parlaklik: %d\\n\", parlaklik);\n  }\n  anaSayfaya();\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(LED1_PIN, OUTPUT);\n  ledcAttach(LED2_PIN, PWM_FREKANS, PWM_COZUNURLUK);\n  ledleriYaz();\n\n  WiFi.mode(WIFI_AP);\n  WiFi.softAP(AP_ADI, AP_PAROLA);\n  Serial.printf(\"Ag acildi: %s\\n\", AP_ADI);\n  Serial.print(\"Tarayicida ac: http://\");\n  Serial.println(WiFi.softAPIP());\n\n  sunucu.on(\"/\", anaSayfa);\n  sunucu.on(\"/led1\", led1Degistir);\n  sunucu.on(\"/led2\", led2Degistir);\n  sunucu.on(\"/parlaklik\", parlaklikAyarla);\n  sunucu.begin();\n}\n\nvoid loop() {\n  sunucu.handleClient();\n}\n"
+  },
+  "montaj": [
+    "İstersen koddaki AP_ADI ve AP_PAROLA satırlarını değiştir. Parola en az 8 karakter olmalı.",
+    "Kodu yükle ve Seri Port Ekranı'nı aç: \"Ag acildi\" ve adres yazar.",
+    "Telefonun Wi-Fi ayarından \"KendinYap-ESP32\" ağına bağlan. Telefon \"internet yok\" derse \"bağlı kal\"ı seç.",
+    "Tarayıcıda http://192.168.4.1 adresini aç."
+  ],
+  "testler": [
+    "Telefonun Wi-Fi listesinde \"KendinYap-ESP32\" görünüyor.",
+    "Sayfada \"LED 1\"e bas: kırmızı LED yanar, düğme \"AÇIK\" yazar. Yine bas: söner.",
+    "\"LED 2\"ye bas: beyaz LED yarım parlaklıkta yanar.",
+    "Kaydırıcıyı en sola yakın getir ve \"Ayarla\"ya bas: LED 2 kısılır. En sağda tam parlak yanar."
+  ],
+  "tanitim": {
+    "amac": "Modemin olmadığı yerde (bahçe, kamp, atölye) telefonla cihaz yönetmek için. ESP32 kendisi bir Wi-Fi ağı açar; telefon doğrudan ona bağlanır. Çoğu akıllı cihaz ilk kurulumda bu yöntemi kullanır.",
+    "nasil": [
+      "ESP32 AP modunda \"KendinYap-ESP32\" ağını açar; kendi adresi 192.168.4.1 olur.",
+      "Telefon bu ağa bağlanır ve tarayıcıda sayfayı açar.",
+      "Düğmeler /led1 ve /led2 adreslerine gider; ESP32 LED'i yakar ya da söndürür.",
+      "Form /parlaklik?deger=... adresine gider; ESP32 LED 2'ye o değerde PWM verir."
+    ],
+    "ogrenilenler": [
+      "Wi-Fi AP modu (softAP)",
+      "Web sunucusu",
+      "Form ve sorgu değeri",
+      "PWM parlaklık"
+    ],
+    "demo": [
+      {
+        "sure": 2500,
+        "yazi": "ESP32 kendi ağını açtı: KendinYap-ESP32, adres 192.168.4.1."
+      },
+      {
+        "sure": 2500,
+        "yazi": "Telefonda \"LED 1\"e basıldı: kırmızı LED yanar.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/led1"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "\"LED 2\"ye basıldı: beyaz LED yarım parlaklıkta yanar.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/led2"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Parlaklık 30'a çekildi: LED 2 kısılır.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/parlaklik",
+          "sorgu": "deger=30"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Parlaklık 255: LED 2 tam parlak.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/parlaklik",
+          "sorgu": "deger=255"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "\"LED 1\"e yine basıldı: kırmızı LED söner.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/led1"
+        }
+      }
+    ]
+  }
+}

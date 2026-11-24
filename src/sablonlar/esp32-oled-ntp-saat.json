@@ -1,0 +1,107 @@
+{
+  "surum": 1,
+  "id": "esp32-oled-ntp-saat",
+  "baslik": "İnternet saati (OLED)",
+  "ozet": "ESP32 saati internetten alır. OLED ekranda büyük saat, tarih ve Wi-Fi durumu görünür.",
+  "zorluk": "Orta",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "Ekranın ortasında saat SS:DD büyük, saniye yanında orta boy yazıyla görünür.",
+    "Alt satırda tarih (GG.AA.YYYY) ve gün adı görünür.",
+    "Üst satır Wi-Fi durumunu gösterir: \"bagli\" ve sinyal gücü ya da \"yok\".",
+    "Wi-Fi koparsa ESP32 10 saniyede bir yeniden bağlanmayı dener."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "left": 230,
+      "top": 60,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "oled:VIN",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "oled:DATA",
+      "esp:D21",
+      "blue",
+      [],
+      "Modülde SDA yazar."
+    ],
+    [
+      "oled:CLK",
+      "esp:D22",
+      "yellow",
+      [],
+      "Modülde SCL yazar."
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-oled-ntp-saat.ino",
+    "kutuphaneler": [
+      "Adafruit SSD1306",
+      "Adafruit GFX Library"
+    ],
+    "icerik": "// İnternet saati: ESP32 saati NTP ile internetten alır, OLED'de büyük rakamla gösterir.\n#include <WiFi.h>\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n#include <time.h>\n\nconst char* AG_ADI = \"EvimWiFi\";      // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";     // kendi Wi-Fi parolan\nconst char* NTP_SUNUCU = \"pool.ntp.org\";\nconst long SAAT_DILIMI = 3 * 3600;    // Türkiye: UTC+3 (saniye)\nconst unsigned long BAGLANTI_BEKLE_MS = 15000;  // açılışta Wi-Fi için en çok bu kadar bekle\nconst unsigned long YENIDEN_DENE_MS = 10000;    // Wi-Fi koparsa bu aralıkla yeniden dene\nconst int SDA_PIN = 21;\nconst int SCL_PIN = 22;\n\nAdafruit_SSD1306 ekran(128, 64, &Wire, -1);\n// OLED yazı tipinde Türkçe harf yok; gün adları ASCII.\nconst char* GUNLER[] = {\"Paz\", \"Pzt\", \"Sal\", \"Car\", \"Per\", \"Cum\", \"Cmt\"};\nunsigned long sonDeneme = 0;\nint sonDakika = -1;\n\nvoid wifiBaslat() {\n  WiFi.mode(WIFI_STA);\n  WiFi.begin(AG_ADI, PAROLA);\n  sonDeneme = millis();\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  Wire.begin(SDA_PIN, SCL_PIN);\n  if (!ekran.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {\n    Serial.println(\"OLED bulunamadi. Kablolari ve 0x3C adresini kontrol et.\");\n    while (true) delay(1000);\n  }\n  ekran.setTextColor(SSD1306_WHITE);\n  ekran.clearDisplay();\n  ekran.setCursor(0, 0);\n  ekran.println(\"Wi-Fi baglaniyor...\");\n  ekran.display();\n\n  wifiBaslat();\n  Serial.print(\"Wi-Fi'ye baglaniyor\");\n  while (WiFi.status() != WL_CONNECTED && millis() - sonDeneme < BAGLANTI_BEKLE_MS) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  if (WiFi.status() == WL_CONNECTED) {\n    Serial.print(\"Baglandi. IP: \");\n    Serial.println(WiFi.localIP());\n  } else {\n    Serial.println(\"Baglanamadi. Arka planda yeniden denenecek.\");\n  }\n  // Saat internetten (NTP) alınır; ESP32 sonra kendi sayar.\n  configTime(SAAT_DILIMI, 0, NTP_SUNUCU);\n}\n\nvoid loop() {\n  bool bagli = WiFi.status() == WL_CONNECTED;\n  if (!bagli && millis() - sonDeneme > YENIDEN_DENE_MS) {\n    Serial.println(\"Wi-Fi yok. Yeniden baglaniyor...\");\n    WiFi.disconnect();\n    wifiBaslat();\n  }\n\n  ekran.clearDisplay();\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  if (bagli) {\n    ekran.print(\"WiFi: bagli \");\n    ekran.print(WiFi.RSSI());\n    ekran.print(\" dBm\");\n  } else {\n    ekran.print(\"WiFi: yok\");\n  }\n  ekran.drawFastHLine(0, 10, 128, SSD1306_WHITE);\n\n  struct tm saat;\n  if (getLocalTime(&saat, 100)) {\n    char metin[16];\n    // Saat ve dakika büyük (3 kat), saniye orta boy (2 kat).\n    ekran.setTextSize(3);\n    ekran.setCursor(2, 20);\n    snprintf(metin, sizeof metin, \"%02d:%02d\", saat.tm_hour, saat.tm_min);\n    ekran.print(metin);\n    ekran.setTextSize(2);\n    ekran.setCursor(92, 27);\n    snprintf(metin, sizeof metin, \":%02d\", saat.tm_sec);\n    ekran.print(metin);\n\n    // Alt satır: tarih ve gün, ortalı.\n    ekran.setTextSize(1);\n    ekran.setCursor(19, 54);\n    snprintf(metin, sizeof metin, \"%02d.%02d.%04d\", saat.tm_mday, saat.tm_mon + 1, saat.tm_year + 1900);\n    ekran.print(metin);\n    ekran.print(\"  \");\n    ekran.print(GUNLER[saat.tm_wday]);\n\n    if (saat.tm_min != sonDakika) {\n      sonDakika = saat.tm_min;\n      Serial.printf(\"Saat %02d:%02d  Tarih %02d.%02d.%04d\\n\", saat.tm_hour, saat.tm_min,\n                    saat.tm_mday, saat.tm_mon + 1, saat.tm_year + 1900);\n    }\n  } else {\n    ekran.setCursor(10, 30);\n    ekran.print(\"Saat bekleniyor...\");\n  }\n  ekran.display();\n  delay(200);\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "OLED'i 3V3, GND, SDA (D21) ve SCL (D22) ile bağla.",
+    "Başka bir ülkedeysen SAAT_DILIMI satırını değiştir (ör. UTC+1 için 1 * 3600).",
+    "Kodu yükle; ekranda önce \"Wi-Fi baglaniyor...\" yazar, sonra saat gelir."
+  ],
+  "testler": [
+    "Simülasyonda ekranda saat saniye saniye ilerliyor.",
+    "Tarih ve gün adı bugünle aynı.",
+    "Üst satırda \"WiFi: bagli\" ve sinyal gücü yazıyor.",
+    "Gerçek kartta modemi kapatınca üst satır \"WiFi: yok\" oluyor; saat saymaya devam ediyor."
+  ],
+  "tanitim": {
+    "amac": "Hiç ayar istemeyen masa saati. ESP32 saati internetten alır; elektrik gidip gelse de saat kendiliğinden doğru olur. Mutfak, atölye ya da çalışma masası için uygundur.",
+    "nasil": [
+      "ESP32 ev Wi-Fi'sine bağlanır.",
+      "NTP sunucusundan (pool.ntp.org) doğru saati alır; sonra kendi sayar.",
+      "OLED ekrana I2C ile (SDA D21, SCL D22) saati büyük rakamla çizer.",
+      "Alt satıra tarihi ve günü, üst satıra Wi-Fi durumunu yazar."
+    ],
+    "ogrenilenler": [
+      "Wi-Fi bağlantısı",
+      "NTP ile saat",
+      "OLED ekran",
+      "Yazı boyutu ve yerleşim"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "ESP32 Wi-Fi'ye bağlanıyor."
+      },
+      {
+        "sure": 4000,
+        "yazi": "Saat internetten geldi: rakamlar saniye saniye ilerler."
+      },
+      {
+        "sure": 4000,
+        "yazi": "Alt satırda tarih ve gün, üst satırda Wi-Fi durumu var."
+      }
+    ]
+  }
+}

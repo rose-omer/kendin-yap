@@ -1,0 +1,378 @@
+{
+  "surum": 1,
+  "id": "uno-sifreli-kilit",
+  "baslik": "Şifreli kilit",
+  "ozet": "4x4 tuş takımıyla şifre girilir; doğru şifre servo kilidi 5 saniye açar.",
+  "zorluk": "İleri",
+  "sure": "2 saat",
+  "gereksinimler": [
+    "LCD \"Sifre girin:\" yazar; her rakam için * görünür.",
+    "# tuşu şifreyi onaylar; * tuşu girilenleri siler.",
+    "Doğru şifrede servo 90° döner ve yeşil LED yanar; 5 saniye sonra kilit kapanır.",
+    "Yanlış şifrede kırmızı LED yanar ve buzzer 1 saniye öter.",
+    "Şifre kodun başındaki SIFRE sabitidir (varsayılan 1234)."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 300,
+      "top": 420,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-membrane-keypad",
+      "id": "tus",
+      "left": 360,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "left": -60,
+      "top": 520,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "left": -200,
+      "top": 560,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rArka",
+      "left": 140,
+      "top": 700,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo",
+      "left": 680,
+      "top": 230,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rYesil",
+      "left": 615,
+      "top": 440,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "yesil",
+      "left": 715,
+      "top": 410,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rKirmizi",
+      "left": 615,
+      "top": 540,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "kirmizi",
+      "left": 715,
+      "top": 510,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 700,
+      "top": 610,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "lcd:VSS",
+      "uno:GND.2",
+      "black",
+      [],
+      "LCD'nin 1. pini (VSS)."
+    ],
+    [
+      "lcd:VDD",
+      "uno:5V",
+      "red",
+      [],
+      "LCD'nin 2. pini (VDD)."
+    ],
+    [
+      "lcd:RW",
+      "uno:GND.2",
+      "black",
+      [],
+      "5. pin (RW) GND'de: LCD yalnız yazı alır."
+    ],
+    [
+      "lcd:K",
+      "uno:GND.2",
+      "black",
+      [],
+      "16. pin (K): arka ışığın eksisi."
+    ],
+    [
+      "pot:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pot:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "pot:SIG",
+      "lcd:V0",
+      "yellow",
+      [],
+      "Potun orta bacağı LCD'nin 3. pinine (V0): kontrast."
+    ],
+    [
+      "lcd:A",
+      "rArka:1",
+      "orange",
+      [],
+      "15. pin (A): arka ışığın artısı."
+    ],
+    [
+      "rArka:2",
+      "uno:5V",
+      "red",
+      [],
+      "220 Ω arka ışığın akımını sınırlar."
+    ],
+    [
+      "servo:GND",
+      "uno:GND.3",
+      "black",
+      [],
+      "Servonun kahverengi kablosu."
+    ],
+    [
+      "servo:V+",
+      "uno:5V",
+      "red",
+      [],
+      "Kırmızı kablo. Tek SG90 Uno'nun 5V'u ile çalışır; titrerse ayrı 5 V kaynak kullan."
+    ],
+    [
+      "yesil:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "kirmizi:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "bz1:1",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "tus:R1",
+      "uno:9",
+      "orange",
+      [],
+      "Şerit kablonun 1. teli (soldan)."
+    ],
+    [
+      "tus:R2",
+      "uno:8",
+      "orange",
+      [],
+      "2. tel."
+    ],
+    [
+      "tus:R3",
+      "uno:7",
+      "orange",
+      [],
+      "3. tel."
+    ],
+    [
+      "tus:R4",
+      "uno:6",
+      "orange",
+      [],
+      "4. tel."
+    ],
+    [
+      "tus:C1",
+      "uno:5",
+      "blue",
+      [],
+      "5. tel."
+    ],
+    [
+      "tus:C2",
+      "uno:4",
+      "blue",
+      [],
+      "6. tel."
+    ],
+    [
+      "tus:C3",
+      "uno:3",
+      "blue",
+      [],
+      "7. tel."
+    ],
+    [
+      "tus:C4",
+      "uno:2",
+      "blue",
+      [],
+      "8. tel."
+    ],
+    [
+      "lcd:RS",
+      "uno:A0",
+      "blue",
+      [],
+      "4. pin (RS)."
+    ],
+    [
+      "lcd:E",
+      "uno:A1",
+      "purple",
+      [],
+      "6. pin (E)."
+    ],
+    [
+      "lcd:D4",
+      "uno:A2",
+      "green",
+      [],
+      "11. pin (D4). D0–D3 (7–10. pinler) boş kalır."
+    ],
+    [
+      "lcd:D5",
+      "uno:A3",
+      "green",
+      [],
+      "12. pin (D5)."
+    ],
+    [
+      "lcd:D6",
+      "uno:A4",
+      "green",
+      [],
+      "13. pin (D6)."
+    ],
+    [
+      "lcd:D7",
+      "uno:A5",
+      "green",
+      [],
+      "14. pin (D7)."
+    ],
+    [
+      "servo:PWM",
+      "uno:10",
+      "orange",
+      [],
+      "Servonun turuncu kablosu."
+    ],
+    [
+      "yesil:A",
+      "rYesil:2",
+      "green",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "rYesil:1",
+      "uno:11",
+      "green",
+      []
+    ],
+    [
+      "kirmizi:A",
+      "rKirmizi:2",
+      "yellow",
+      [],
+      "LED'in uzun bacağı."
+    ],
+    [
+      "rKirmizi:1",
+      "uno:12",
+      "yellow",
+      []
+    ],
+    [
+      "bz1:2",
+      "uno:13",
+      "purple",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-sifreli-kilit.ino",
+    "kutuphaneler": [
+      "Keypad"
+    ],
+    "icerik": "// Şifreli kilit: 4x4 tuş takımıyla 4 haneli şifre girilir.\n// Doğru şifre: servo kilidi 5 sn açar, yeşil LED yanar.\n// Yanlış şifre: kırmızı LED yanar, buzzer öter.\n// # = onayla, * = sil.\n#include <Keypad.h>\n#include <Servo.h>\n#include <LiquidCrystal.h>\n\nconst char SIFRE[] = \"1234\";           // Kendi şifreni yaz (4 rakam).\nconst unsigned long ACIK_SURE = 5000;  // ms; kilidin açık kaldığı süre\nconst unsigned long HATA_SURE = 1000;  // ms; yanlış şifre uyarısı\nconst int KILITLI_ACI = 0;\nconst int ACIK_ACI = 90;\n\nconst int SERVO_PIN = 10;\nconst int YESIL_PIN = 11;\nconst int KIRMIZI_PIN = 12;\nconst int BUZZER_PIN = 13;\n\n// LCD: RS, E, D4, D5, D6, D7 analog pinlerde (dijital çıkış olarak).\nLiquidCrystal lcd(A0, A1, A2, A3, A4, A5);\n\nconst byte SATIR = 4;\nconst byte SUTUN = 4;\nchar tuslar[SATIR][SUTUN] = {\n  {'1', '2', '3', 'A'},\n  {'4', '5', '6', 'B'},\n  {'7', '8', '9', 'C'},\n  {'*', '0', '#', 'D'}\n};\nbyte satirPinleri[SATIR] = {9, 8, 7, 6};  // R1, R2, R3, R4\nbyte sutunPinleri[SUTUN] = {5, 4, 3, 2};  // C1, C2, C3, C4\nKeypad tusTakimi = Keypad(makeKeymap(tuslar), satirPinleri, sutunPinleri, SATIR, SUTUN);\n\nServo kilit;\nchar girilen[5];       // 4 rakam + bitiş karakteri\nbyte haneSayisi = 0;\n\nvoid sifreIste() {\n  haneSayisi = 0;\n  girilen[0] = '\\0';\n  lcd.clear();\n  lcd.print(\"Sifre girin:\");\n  lcd.setCursor(0, 1);\n}\n\nvoid kilidiAc() {\n  Serial.println(\"Dogru sifre: kilit acik\");\n  lcd.clear();\n  lcd.print(\"Kapi acik\");\n  digitalWrite(YESIL_PIN, HIGH);\n  tone(BUZZER_PIN, 1500, 150);\n  kilit.write(ACIK_ACI);\n  // Geri sayım.\n  for (int s = ACIK_SURE / 1000; s > 0; s--) {\n    lcd.setCursor(0, 1);\n    lcd.print(s);\n    lcd.print(\" sn  \");\n    delay(1000);\n  }\n  kilit.write(KILITLI_ACI);\n  digitalWrite(YESIL_PIN, LOW);\n  Serial.println(\"Kilit kapandi\");\n}\n\nvoid yanlisSifre() {\n  Serial.println(\"Yanlis sifre\");\n  lcd.clear();\n  lcd.print(\"Yanlis sifre!\");\n  digitalWrite(KIRMIZI_PIN, HIGH);\n  tone(BUZZER_PIN, 400, HATA_SURE);\n  delay(HATA_SURE);\n  digitalWrite(KIRMIZI_PIN, LOW);\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(YESIL_PIN, OUTPUT);\n  pinMode(KIRMIZI_PIN, OUTPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  kilit.attach(SERVO_PIN);\n  kilit.write(KILITLI_ACI);\n  lcd.begin(16, 2);\n  sifreIste();\n}\n\nvoid loop() {\n  char tus = tusTakimi.getKey();\n  if (!tus) return;\n\n  if (tus == '*') {          // sil\n    sifreIste();\n    return;\n  }\n  if (tus == '#') {          // onayla\n    if (haneSayisi == 4 && strcmp(girilen, SIFRE) == 0) kilidiAc();\n    else yanlisSifre();\n    sifreIste();\n    return;\n  }\n  if (tus >= '0' && tus <= '9' && haneSayisi < 4) {\n    girilen[haneSayisi] = tus;\n    haneSayisi++;\n    girilen[haneSayisi] = '\\0';\n    lcd.print('*');            // rakam gizli gösterilir\n    tone(BUZZER_PIN, 2000, 30);  // tuş sesi\n  }\n}\n"
+  },
+  "montaj": [
+    "Tuş takımının 8 telli şerit kablosunu, tuşlar sana bakarken soldan say: 1–4. teller satır (R1–R4), 5–8. teller sütun (C1–C4).",
+    "LCD'yi breadboard'a tak. Potansiyometreyi ve 220 Ω arka ışık direncini LCD'nin yanına koy.",
+    "LCD'nin RS, E ve D4–D7 kabloları A0–A5 pinlerine gider. Kod bu pinleri dijital çıkış olarak kullanır.",
+    "Yeşil ve kırmızı LED'in uzun bacağına birer 220 Ω direnç bağla.",
+    "Servoyu kapı mandalına ya da sürgüye bağla. Kilitli konum 0°, açık konum 90°; gerekirse kodda KILITLI_ACI ve ACIK_ACI'yi değiştir.",
+    "Kabloları sırayla tak.",
+    "Kodu yüklemeden önce SIFRE sabitine kendi 4 haneli şifreni yaz.",
+    "LCD'de yazı görünmezse potansiyometreyi çevir."
+  ],
+  "testler": [
+    "Açılışta LCD \"Sifre girin:\" yazar; servo kilitli konumdadır.",
+    "1, 2, 3, 4 ve # tuşlarına bas: LCD \"Kapi acik\" yazar, yeşil LED yanar, servo döner.",
+    "5 saniye sonra servo geri döner; LCD yeniden şifre ister.",
+    "Yanlış şifre ve #: kırmızı LED yanar, buzzer öter, LCD \"Yanlis sifre!\" yazar.",
+    "Birkaç rakamdan sonra * tuşuna bas: satır silinir.",
+    "5. rakamı girmeye çalış: rakam eklenmez."
+  ],
+  "tanitim": {
+    "amac": "Kapı, çekmece ya da kumbara için şifreli kilit. Doğru 4 haneli şifre girilince servo sürgüyü çeker ve 5 saniye açık tutar. Yanlış şifrede ışık ve ses uyarısı verir.",
+    "nasil": [
+      "Tuş takımı 4 satır ve 4 sütun kablosuyla bağlıdır; Keypad kütüphanesi basılan tuşu bulur.",
+      "Girilen rakamlar saklanır; LCD her rakam için * gösterir.",
+      "# tuşunda girilen şifre kayıtlı şifreyle karşılaştırılır.",
+      "Doğruysa servo döner ve yeşil LED yanar; yanlışsa kırmızı LED ve buzzer çalışır."
+    ],
+    "ogrenilenler": [
+      "Tuş takımı tarama",
+      "Servo kontrol",
+      "Karakter dizisi karşılaştırma",
+      "LCD ile arayüz"
+    ],
+    "demo": []
+  }
+}

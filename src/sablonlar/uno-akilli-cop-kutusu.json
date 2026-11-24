@@ -1,0 +1,149 @@
+{
+  "surum": 1,
+  "id": "uno-akilli-cop-kutusu",
+  "baslik": "Akıllı çöp kutusu (Uno)",
+  "ozet": "Elini kutuya yaklaştırınca kapak kendiliğinden açılır, 3 saniye sonra kapanır.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "El 15 cm'den yakına gelince kapak açılır.",
+    "El çekilince kapak 3 saniye sonra kapanır.",
+    "El yakında kaldıkça kapak açık kalır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "sr04",
+      "left": 20,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "kapak",
+      "left": 360,
+      "top": 140,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "sr04:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr04:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "kapak:GND",
+      "uno:GND.3",
+      "black",
+      [],
+      "Servonun kahverengi kablosu."
+    ],
+    [
+      "kapak:V+",
+      "uno:5V",
+      "red",
+      [],
+      "Servonun kırmızı kablosu. Tek küçük servo (SG90) Uno'nun 5V'undan beslenebilir."
+    ],
+    [
+      "sr04:TRIG",
+      "uno:12",
+      "orange",
+      []
+    ],
+    [
+      "sr04:ECHO",
+      "uno:11",
+      "yellow",
+      [],
+      "Uno 5 V çalıştığı için gerilim bölücü gerekmez."
+    ],
+    [
+      "kapak:PWM",
+      "uno:9",
+      "green",
+      [],
+      "Servonun turuncu kablosu."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-akilli-cop-kutusu.ino",
+    "kutuphaneler": [],
+    "icerik": "// Akıllı çöp kutusu: el yaklaşınca servo kapağı açar, bir süre sonra kapatır.\n#include <Servo.h>  // Arduino IDE ile gelir\n\nconst int TRIG_PIN = 12;\nconst int ECHO_PIN = 11;\nconst int SERVO_PIN = 9;\n\nconst int ESIK_CM = 15;                       // bundan yakın el kapağı açar\nconst int KAPALI_ACI = 0;                     // kapak kapalıyken servo açısı\nconst int ACIK_ACI = 100;                     // kapak açıkken servo açısı\nconst unsigned long ACIK_KALMA_MS = 3000;     // el gidince kapak bu kadar açık kalır\n\nServo kapak;\nbool acik = false;\nunsigned long sonGorulme = 0;  // elin en son görüldüğü an\n\n// Mesafeyi cm olarak döndürür; yankı gelmezse 0.\nlong mesafeOlc() {\n  digitalWrite(TRIG_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG_PIN, LOW);\n  long sure = pulseIn(ECHO_PIN, HIGH, 30000);  // en çok 30 ms bekle (~5 m)\n  return sure / 58;\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(TRIG_PIN, OUTPUT);\n  pinMode(ECHO_PIN, INPUT);\n  kapak.attach(SERVO_PIN);\n  kapak.write(KAPALI_ACI);\n  Serial.println(\"Hazir. Elini yaklastir.\");\n}\n\nvoid loop() {\n  long cm = mesafeOlc();\n\n  if (cm > 0 && cm < ESIK_CM) {\n    sonGorulme = millis();\n    if (!acik) {\n      kapak.write(ACIK_ACI);\n      acik = true;\n      Serial.print(\"El algilandi (\");\n      Serial.print(cm);\n      Serial.println(\" cm): kapak acildi.\");\n    }\n  }\n\n  if (acik && millis() - sonGorulme > ACIK_KALMA_MS) {\n    kapak.write(KAPALI_ACI);\n    acik = false;\n    Serial.println(\"Kapak kapandi.\");\n  }\n  delay(100);\n}\n"
+  },
+  "montaj": [
+    "Servoyu kutunun arka kenarına, kolu kapağı itecek biçimde yapıştır.",
+    "HC-SR04'ü kapağın önüne, \"gözleri\" yukarı ya da öne bakacak biçimde tak.",
+    "Servo kolunu kapağa ince bir telle ya da çift taraflı bantla bağla.",
+    "Kabloları sırayla tak.",
+    "Kapak çok açılıyor ya da az açılıyorsa koddaki ACIK_ACI değerini değiştir."
+  ],
+  "testler": [
+    "Seri Port Ekranı (9600) \"Hazir\" yazıyor.",
+    "Elini 10 cm'ye getirince kapak açılıyor.",
+    "Elini çekince kapak yaklaşık 3 saniye sonra kapanıyor.",
+    "Simülasyonda mesafeyi 8 cm yap: servo 100°'ye dönüyor."
+  ],
+  "tanitim": {
+    "amac": "Çöp kutusunun kapağına dokunmadan açılması. Mutfak ve hastanelerdeki temassız kutuların küçük hâli.",
+    "nasil": [
+      "HC-SR04 kapağın önündeki mesafeyi ölçer.",
+      "El 15 cm'den yakına gelince Arduino servoyu döndürür; kapak açılır.",
+      "El gidince Arduino 3 saniye bekler.",
+      "Süre dolunca servo geri döner; kapak kapanır."
+    ],
+    "ogrenilenler": [
+      "Ultrasonik mesafe",
+      "Servo motor",
+      "millis() ile süre"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "El yok (80 cm): kapak kapalı.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 80
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "El yaklaştı (8 cm): kapak açılır.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 8
+        }
+      },
+      {
+        "sure": 4500,
+        "yazi": "El çekildi: kapak 3 saniye sonra kapanır.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 80
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Kapak kapalı; yeni el bekleniyor."
+      }
+    ]
+  }
+}

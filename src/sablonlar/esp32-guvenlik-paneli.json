@@ -1,0 +1,184 @@
+{
+  "surum": 1,
+  "id": "esp32-guvenlik-paneli",
+  "baslik": "Web kontrollü güvenlik paneli",
+  "ozet": "PIR sensörü hareket görünce siren çalar ve kırmızı LED yanıp söner. Telefondaki sayfadan alarmı kurar, çözer ve son 10 alarmı saatiyle görürsün.",
+  "zorluk": "İleri",
+  "sure": "1,5 saat",
+  "gereksinimler": [
+    "Sayfada \"Kur\" ve \"Çöz\" düğmeleri ve panelin durumu görünür.",
+    "Panel kuruluyken hareket olunca buzzer kesik kesik öter ve kırmızı LED yanıp söner.",
+    "Panel çözükken hareket alarm çaldırmaz.",
+    "\"Çöz\" sireni hemen susturur; siren en geç 20 saniyede kendi de susar.",
+    "Sayfada son 10 alarm, en yenisi üstte, saatiyle listelenir (saat yoksa açılıştan beri geçen süre).",
+    "PIR açılışta 30 saniye ısınır; bu sürede alarm çalmaz."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 320,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir",
+      "left": 20,
+      "top": -40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 20,
+      "top": 120,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 200,
+      "top": 60,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 200,
+      "top": 150,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "pir:VCC",
+      "esp:VIN",
+      "red",
+      [],
+      "PIR 5 V ister. VIN, USB takılıyken 5 V verir."
+    ],
+    [
+      "pir:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "bz1:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "led1:C",
+      "esp:GND.2",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "pir:OUT",
+      "esp:D27",
+      "yellow",
+      [],
+      "PIR çıkışı 3,3 V'tur; ESP32 için güvenli."
+    ],
+    [
+      "bz1:2",
+      "esp:D25",
+      "green",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "esp:D26",
+      "orange",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-guvenlik-paneli.ino",
+    "kutuphaneler": [],
+    "icerik": "// Güvenlik paneli: PIR hareket görünce siren çalar; web sayfasından kurulur ve çözülür.\n#include <WiFi.h>\n#include <WebServer.h>\n#include <time.h>\n\nconst char* AG_ADI = \"EvimWiFi\";     // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";    // kendi Wi-Fi parolan\nconst int PIR_PIN = 27;\nconst int BUZZER_PIN = 25;\nconst int LED_PIN = 26;\nconst unsigned long ISINMA_MS = 30000;        // PIR açılışta 30 sn ısınır; bu sürede hareket sayılmaz\nconst unsigned long ALARM_SURESI_MS = 20000;  // siren en çok bu kadar çalar, sonra panel kurulu bekler\nconst unsigned long SIREN_ADIM_MS = 250;      // siren ve LED bu aralıkla açılıp kapanır\nconst int SIREN_FREKANS = 2500;               // Hz\nconst long SAAT_DILIMI = 3 * 3600;            // Türkiye: UTC+3\nconst int OLAY_SAYISI = 10;                   // sayfada son 10 alarm\n\nWebServer sunucu(80);\nbool kurulu = false;\nbool alarmCaliyor = false;\nbool sirenAcik = false;\nunsigned long alarmBaslangic = 0;\nint oncekiPir = LOW;\n// Halka tampon: yeni olay en eskinin yerine yazılır.\nString olaylar[OLAY_SAYISI];\nint olaySirasi = 0;\nint olayAdedi = 0;\n\nconst char SAYFA[] PROGMEM = R\"HTML(<!doctype html>\n<html><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Güvenlik paneli</title>\n<style>\nbody{font-family:sans-serif;max-width:420px;margin:auto;padding:16px;text-align:center}\n#durum{font-size:22px;font-weight:bold;padding:16px;border-radius:12px;background:#e5e7eb}\n#durum.kurulu{background:#fef3c7}\n#durum.alarm{background:#dc2626;color:#fff}\nbutton{font-size:20px;margin:12px 6px;padding:12px 28px;border-radius:10px;border:none;color:#fff}\nul{text-align:left;padding-left:20px}\nli{margin:4px 0;font-family:monospace}\n</style></head><body>\n<h1>Güvenlik paneli</h1>\n<div id=\"durum\">Bağlanıyor...</div>\n<button style=\"background:#b45309\" onclick=\"komut('/kur')\">Kur</button>\n<button style=\"background:#15803d\" onclick=\"komut('/coz')\">Çöz</button>\n<h2>Son 10 alarm</h2>\n<ul id=\"liste\"></ul>\n<script>\nvar ciz = function (d) {\n  var k = document.getElementById('durum');\n  if (d.alarm) { k.textContent = 'ALARM! Hareket algılandı'; k.className = 'alarm'; }\n  else if (d.kurulu && d.isinma > 0) { k.textContent = 'Kurulu (sensör ısınıyor: ' + d.isinma + ' sn)'; k.className = 'kurulu'; }\n  else if (d.kurulu) { k.textContent = 'Kurulu: bekçide'; k.className = 'kurulu'; }\n  else { k.textContent = 'Çözük: alarm kapalı'; k.className = ''; }\n  var l = document.getElementById('liste');\n  l.innerHTML = '';\n  if (!d.olaylar.length) l.innerHTML = '<li>Henüz alarm yok.</li>';\n  d.olaylar.forEach(function (o) { var li = document.createElement('li'); li.textContent = o; l.appendChild(li); });\n};\nvar yenile = function () {\n  fetch('/durum').then(function (r) { return r.json(); }).then(ciz)\n    .catch(function () { document.getElementById('durum').textContent = 'ESP32 cevap vermedi.'; });\n};\nvar komut = function (yol) { fetch(yol).then(function (r) { return r.json(); }).then(ciz); };\nyenile();\nsetInterval(yenile, 2000);\n</script></body></html>)HTML\";\n\n// NTP saati varsa \"GG.AA SS:DD:ss\", yoksa açılıştan beri geçen süre \"+SS:DD:ss\".\nString zamanMetni() {\n  struct tm t;\n  char m[24];\n  if (getLocalTime(&t, 10)) {\n    snprintf(m, sizeof m, \"%02d.%02d %02d:%02d:%02d\", t.tm_mday, t.tm_mon + 1, t.tm_hour, t.tm_min, t.tm_sec);\n  } else {\n    unsigned long sn = millis() / 1000;\n    snprintf(m, sizeof m, \"+%02lu:%02lu:%02lu\", sn / 3600, (sn / 60) % 60, sn % 60);\n  }\n  return String(m);\n}\n\nvoid olayEkle(const String& metin) {\n  olaylar[olaySirasi] = metin;\n  olaySirasi = (olaySirasi + 1) % OLAY_SAYISI;\n  if (olayAdedi < OLAY_SAYISI) olayAdedi++;\n}\n\nvoid sirenYaz(bool acik) {\n  if (acik == sirenAcik) return;\n  sirenAcik = acik;\n  digitalWrite(LED_PIN, acik ? HIGH : LOW);\n  if (acik) tone(BUZZER_PIN, SIREN_FREKANS);\n  else noTone(BUZZER_PIN);\n}\n\nvoid alarmBaslat() {\n  alarmCaliyor = true;\n  alarmBaslangic = millis();\n  String zaman = zamanMetni();\n  olayEkle(zaman + \"  Hareket algılandı\");\n  Serial.print(\"ALARM: hareket var! \");\n  Serial.println(zaman);\n}\n\nvoid alarmDurdur() {\n  alarmCaliyor = false;\n  sirenYaz(false);\n}\n\nString durumJson() {\n  String j = \"{\\\"kurulu\\\":\";\n  j += kurulu ? \"true\" : \"false\";\n  j += \",\\\"alarm\\\":\";\n  j += alarmCaliyor ? \"true\" : \"false\";\n  j += \",\\\"isinma\\\":\";\n  unsigned long simdi = millis();\n  j += simdi < ISINMA_MS ? (ISINMA_MS - simdi) / 1000 + 1 : 0UL;\n  j += \",\\\"olaylar\\\":[\";\n  for (int i = 0; i < olayAdedi; i++) {\n    int k = (olaySirasi - 1 - i + OLAY_SAYISI) % OLAY_SAYISI;  // en yeni önce\n    if (i > 0) j += \",\";\n    j += \"\\\"\";\n    j += olaylar[k];\n    j += \"\\\"\";\n  }\n  j += \"]}\";\n  return j;\n}\n\nvoid anaSayfa() {\n  sunucu.send(200, \"text/html\", SAYFA);\n}\n\nvoid kur() {\n  kurulu = true;\n  Serial.println(\"Panel kuruldu.\");\n  sunucu.send(200, \"application/json\", durumJson());\n}\n\nvoid coz() {\n  kurulu = false;\n  alarmDurdur();\n  Serial.println(\"Panel cozuldu.\");\n  sunucu.send(200, \"application/json\", durumJson());\n}\n\nvoid durum() {\n  sunucu.send(200, \"application/json\", durumJson());\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(PIR_PIN, INPUT);\n  pinMode(LED_PIN, OUTPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n\n  WiFi.mode(WIFI_STA);\n  WiFi.begin(AG_ADI, PAROLA);\n  Serial.print(\"Wi-Fi'ye baglaniyor\");\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  Serial.print(\"Baglandi. Tarayicida ac: http://\");\n  Serial.println(WiFi.localIP());\n  configTime(SAAT_DILIMI, 0, \"pool.ntp.org\");\n\n  sunucu.on(\"/\", anaSayfa);\n  sunucu.on(\"/kur\", kur);\n  sunucu.on(\"/coz\", coz);\n  sunucu.on(\"/durum\", durum);\n  sunucu.begin();\n  Serial.println(\"PIR isiniyor (30 sn). Panel cozuk.\");\n}\n\nvoid loop() {\n  sunucu.handleClient();\n\n  // Isınma bitince PIR'i oku. Yalnız LOW -> HIGH geçişi yeni olaydır; aynı hareket bir kez yazılır.\n  if (millis() > ISINMA_MS) {\n    int pir = digitalRead(PIR_PIN);\n    if (kurulu && !alarmCaliyor && pir == HIGH && oncekiPir == LOW) alarmBaslat();\n    oncekiPir = pir;\n  }\n\n  if (alarmCaliyor) {\n    unsigned long gecen = millis() - alarmBaslangic;\n    if (gecen > ALARM_SURESI_MS) {\n      alarmDurdur();\n      Serial.println(\"Alarm suresi doldu. Panel kurulu bekliyor.\");\n    } else {\n      sirenYaz((gecen / SIREN_ADIM_MS) % 2 == 0);\n    }\n  } else if (kurulu) {\n    // Kuruluyken LED 2 sn'de bir kısa yanar.\n    digitalWrite(LED_PIN, millis() % 2000 < 100 ? HIGH : LOW);\n  } else {\n    digitalWrite(LED_PIN, LOW);\n  }\n  delay(10);\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "PIR'i odanın girişini görecek yere koy; üstündeki iki ayar vidasıyla menzili ve süreyi ayarla.",
+    "Buzzer'ın uzun bacağını D25'e, kırmızı LED'i 220 Ω dirençle D26'ya bağla.",
+    "Kodu yükle, seri ekrandaki IP adresini telefonda aç (telefon aynı Wi-Fi'de olmalı).",
+    "Sayfa şifresizdir; yalnız ev ağında kullan, internete açma."
+  ],
+  "testler": [
+    "Simülasyonda Wi-Fi panelindeki sayfa \"Çözük: alarm kapalı\" yazıyor.",
+    "\"Kur\"a bas: durum \"Kurulu\" oluyor; ilk 30 saniyede geri sayım görünüyor.",
+    "30 saniye sonra PIR'in hareket düğmesine bas: buzzer ötüyor, LED yanıp sönüyor, listeye bir satır ekleniyor.",
+    "\"Çöz\"e bas: siren hemen susuyor.",
+    "Panel çözükken hareket düğmesine bas: ses yok, liste değişmiyor."
+  ],
+  "tanitim": {
+    "amac": "Ev ya da dükkân için küçük bir alarm sistemi. Çıkarken telefondan kurarsın; biri girerse siren çalar ve olay saatiyle kaydedilir. Dönünce sayfadan çözer, kimin ne zaman geldiğini görürsün.",
+    "nasil": [
+      "PIR sensörü insan hareketini görünce OUT pinini HIGH yapar.",
+      "Panel kuruluysa ESP32 sireni (buzzer) ve kırmızı LED'i yanıp söndürür.",
+      "Her alarm, NTP saatiyle bir listeye yazılır; liste son 10 olayı tutar.",
+      "Web sayfası 2 saniyede bir /durum adresinden JSON çeker; \"Kur\" ve \"Çöz\" düğmeleri /kur ve /coz adresine gider."
+    ],
+    "ogrenilenler": [
+      "Durum makinesi",
+      "Kenar algılama",
+      "Halka tampon",
+      "Web ile uzaktan kontrol"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "ESP32 Wi-Fi'ye bağlanıyor; panel çözük."
+      },
+      {
+        "sure": 29000,
+        "yazi": "Telefonda \"Kur\"a basıldı. PIR ilk 30 saniye ısınır; bu sürede alarm çalmaz.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/kur"
+        }
+      },
+      {
+        "sure": 5000,
+        "yazi": "Biri odaya girdi: siren çalar, kırmızı LED yanıp söner, olay listeye yazılır.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "pir"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "\"Çöz\"e basıldı: siren hemen susar.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/coz"
+        }
+      },
+      {
+        "sure": 4000,
+        "yazi": "Panel çözükken hareket var: alarm çalmaz.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "pir"
+        }
+      }
+    ]
+  }
+}

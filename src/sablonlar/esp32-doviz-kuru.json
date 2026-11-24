@@ -1,0 +1,108 @@
+{
+  "surum": 1,
+  "id": "esp32-doviz-kuru",
+  "baslik": "Döviz kuru ekranı",
+  "ozet": "ESP32 internetten dolar ve euro kurunu çeker; OLED ekranda USD/TRY, EUR/TRY ve son güncelleme saatini gösterir.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "ESP32 Wi-Fi'ye bağlanır ve saati internetten (NTP) alır.",
+    "Kurlar open.er-api.com adresinden yarım saatte bir çekilir.",
+    "Ekranda USD/TRY ve EUR/TRY iki ondalıkla görünür.",
+    "Ekranın altında son başarılı güncellemenin saati yazar.",
+    "İstek olmazsa eski değerler kalır ve 1 dakika sonra yeniden denenir."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "left": 230,
+      "top": 60,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "oled:VIN",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "oled:DATA",
+      "esp:D21",
+      "blue",
+      [],
+      "Modülde SDA yazar."
+    ],
+    [
+      "oled:CLK",
+      "esp:D22",
+      "yellow",
+      [],
+      "Modülde SCL yazar."
+    ]
+  ],
+  "kod": {
+    "dosya": "esp32-doviz-kuru.ino",
+    "kutuphaneler": [
+      "Adafruit SSD1306",
+      "Adafruit GFX Library"
+    ],
+    "icerik": "// Döviz kuru ekranı: USD/TRY ve EUR/TRY kurunu internetten çek, OLED'de güncelleme saatiyle göster.\n// Kaynak: open.er-api.com (ücretsiz, anahtar istemez; kurlar günde bir yenilenir).\n#include <WiFi.h>\n#include <HTTPClient.h>\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n\nconst char* AG_ADI = \"EvimWiFi\";     // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";    // kendi Wi-Fi parolan\nconst char* ADRES = \"https://open.er-api.com/v6/latest/USD\";  // 1 USD kaç birim eder\nconst long SAAT_DILIMI = 3 * 3600;                // Türkiye: UTC+3\nconst unsigned long GUNCELLEME_MS = 30UL * 60000; // yarım saatte bir sor\nconst unsigned long HATA_BEKLEME_MS = 60000;      // olmazsa 1 dakika sonra tekrar dene\n\nAdafruit_SSD1306 ekran(128, 64, &Wire, -1);\nfloat usdTry = NAN;\nfloat eurTry = NAN;\nchar guncelSaat[6] = \"--:--\";\nunsigned long sonDeneme = 0;\nbool ilkKez = true;\nbool sonDenemeBasarili = false;\n\n// JSON içinde \"ANAHTAR\": sayısını basit metin aramasıyla bulur. Yoksa NAN döner.\nfloat sayiBul(const String& json, const char* anahtar, int bas) {\n  String aranan = String(\"\\\"\") + anahtar + \"\\\":\";\n  int i = json.indexOf(aranan, bas);\n  if (i < 0) return NAN;\n  return json.substring(i + aranan.length()).toFloat();\n}\n\nbool kurlariAl() {\n  HTTPClient http;\n  http.begin(ADRES);\n  int kod = http.GET();\n  bool tamam = false;\n  if (kod == 200) {\n    String json = http.getString();\n    int oranlar = json.indexOf(\"\\\"rates\\\"\");\n    if (oranlar >= 0) {\n      float tl = sayiBul(json, \"TRY\", oranlar);   // 1 USD = tl TRY\n      float euro = sayiBul(json, \"EUR\", oranlar); // 1 USD = euro EUR\n      if (!isnan(tl) && !isnan(euro) && euro > 0) {\n        usdTry = tl;\n        eurTry = tl / euro;                       // 1 EUR = tl / euro TRY\n        tamam = true;\n      }\n    }\n  } else {\n    Serial.printf(\"HTTP hatasi: %d\\n\", kod);\n  }\n  http.end();\n  return tamam;\n}\n\nvoid ekranCiz() {\n  ekran.clearDisplay();\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  ekran.println(\"USD/TRY\");\n  ekran.setTextSize(2);\n  ekran.setCursor(0, 10);\n  if (isnan(usdTry)) ekran.println(\"--\");\n  else ekran.println(usdTry, 2);\n\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 30);\n  ekran.println(\"EUR/TRY\");\n  ekran.setTextSize(2);\n  ekran.setCursor(0, 40);\n  if (isnan(eurTry)) ekran.println(\"--\");\n  else ekran.println(eurTry, 2);\n\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 56);\n  ekran.printf(\"Guncel: %s\", guncelSaat);\n  ekran.display();\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  Wire.begin(21, 22);\n  ekran.begin(SSD1306_SWITCHCAPVCC, 0x3C);\n  ekran.setTextColor(SSD1306_WHITE);\n  ekran.clearDisplay();\n  ekran.setCursor(0, 0);\n  ekran.println(\"Wi-Fi baglaniyor...\");\n  ekran.display();\n\n  WiFi.begin(AG_ADI, PAROLA);\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  Serial.print(\"IP: \");\n  Serial.println(WiFi.localIP());\n  configTime(SAAT_DILIMI, 0, \"pool.ntp.org\");\n}\n\nvoid loop() {\n  unsigned long bekleme = sonDenemeBasarili ? GUNCELLEME_MS : HATA_BEKLEME_MS;\n  if (ilkKez || millis() - sonDeneme > bekleme) {\n    ilkKez = false;\n    sonDeneme = millis();\n    sonDenemeBasarili = kurlariAl();\n    if (sonDenemeBasarili) {\n      struct tm saat;\n      if (getLocalTime(&saat)) snprintf(guncelSaat, sizeof guncelSaat, \"%02d:%02d\", saat.tm_hour, saat.tm_min);\n      Serial.printf(\"USD/TRY: %.2f  EUR/TRY: %.2f  (%s)\\n\", usdTry, eurTry, guncelSaat);\n    } else {\n      Serial.println(\"Kur alinamadi; 1 dakika sonra tekrar.\");\n    }\n    ekranCiz();\n  }\n  delay(1000);\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "OLED'in arkasındaki adres 0x3D ise koddaki 0x3C'yi değiştir.",
+    "Kaynak kurları günde bir yeniler. Daha sık sormak işe yaramaz; GUNCELLEME_MS'i yarım saatin altına indirme."
+  ],
+  "testler": [
+    "Açılışta ekranda \"Wi-Fi baglaniyor...\" yazar.",
+    "Birkaç saniye sonra USD/TRY ve EUR/TRY değerleri görünür.",
+    "Alt satırdaki saat, değerlerin geldiği saattir.",
+    "Seri Port Ekranı'nda iki kur ve saat yazar.",
+    "Modemi kapat: eski değerler ekranda kalır, Seri Port Ekranı \"Kur alinamadi\" yazar."
+  ],
+  "tanitim": {
+    "amac": "Masaüstü döviz ekranı. ESP32 ücretsiz bir döviz servisinden JSON verisi alır, içinden dolar ve euro kurunu bulur ve küçük ekranda gösterir. Aynı yolla borsa, kripto ya da hava verisi de çekilir.",
+    "nasil": [
+      "ESP32 Wi-Fi'ye bağlanır, saati NTP ile alır.",
+      "HTTPClient ile open.er-api.com'a HTTPS isteği yollar.",
+      "Gelen JSON'da \"TRY\" ve \"EUR\" değerlerini metin aramasıyla bulur.",
+      "EUR/TRY'yi hesaplar (TRY ÷ EUR) ve iki kuru saatle OLED'e yazar."
+    ],
+    "ogrenilenler": [
+      "HTTPClient (HTTPS)",
+      "JSON'dan değer bulma",
+      "NTP saati",
+      "OLED ekran"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Wi-Fi'ye bağlanıyor…"
+      },
+      {
+        "sure": 4000,
+        "yazi": "İnternetten kurlar çekiliyor (open.er-api.com)."
+      },
+      {
+        "sure": 5000,
+        "yazi": "Ekranda USD/TRY, EUR/TRY ve güncelleme saati."
+      }
+    ]
+  }
+}
