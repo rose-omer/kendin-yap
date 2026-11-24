@@ -2,6 +2,30 @@
 
 ESP32 ve Arduino projelerini fikirden çalışan devreye adım adım kuran yerel web sitesi. Ücretsiz; hesap yok.
 
+![Ana sayfa: canlı demo ve 6 adım](docs/ekran/1-ana-sayfa.png)
+
+## Ekran görüntüleri
+
+| Hazır projeler | Proje tanıtımı ve canlı demo |
+|---|---|
+| ![Hazır projeler](docs/ekran/2-projeler.png) | ![Proje tanıtımı](docs/ekran/3-proje-tanitimi.png) |
+
+| Parçalar ve mağaza fiyatları | Bağlantılar: etkileşimli şema |
+|---|---|
+| ![Fiyat karşılaştırma](docs/ekran/4-parcalar-fiyat.png) | ![Bağlantılar](docs/ekran/5-baglantilar.png) |
+
+| ESP32 simülasyonu: DHT22 + OLED | Wi-Fi: ESP32'nin web sayfası |
+|---|---|
+| ![ESP32 simülasyonu](docs/ekran/6-esp32-simulasyon.png) | ![Wi-Fi web sayfası](docs/ekran/7-wifi-web-sayfasi.png) |
+
+| Kontrol: bağlantı denetimi | Kod: CodeMirror ve pin vurgusu |
+|---|---|
+| ![Kontrol](docs/ekran/8-kontrol.png) | ![Kod](docs/ekran/9-kod.png) |
+
+Koyu tema (Grafit):
+
+![Koyu tema](docs/ekran/10-koyu-tema.png)
+
 ## Başlatma
 
 - `Başlat.cmd` dosyasını çift tıkla. Site `http://127.0.0.1:8200/` adresinde açılır.
