@@ -14,13 +14,45 @@ const FQBN = {
 const ESP32_KARTLARI = new Set(['wokwi-esp32-devkit-v1']);
 const EN_BUYUK_GOVDE = 200 * 1024;
 
+// Yorumları ve yazıları ("…", '…', R"(…)") boşlukla değiştir; satır sonları kalır.
+// Böylece web sayfası metnindeki "function ad() {" ya da "http://" fonksiyon ya da yorum sanılmaz.
+export function kodIskeleti(kod) {
+  const bosalt = (parca) => parca.replace(/[^\n]/g, ' ');
+  let cikti = '';
+  let i = 0;
+  while (i < kod.length) {
+    const c = kod[i];
+    const ham = c === 'R' && !/\w/.test(kod[i - 1] || '') ? /^R"([^()\\\s]{0,16})\(/.exec(kod.slice(i, i + 20)) : null;
+    let son;
+    if (ham) {
+      const kapanis = `)${ham[1]}"`;
+      const bit = kod.indexOf(kapanis, i + ham[0].length);
+      son = bit < 0 ? kod.length : bit + kapanis.length;
+    } else if (c === '/' && kod[i + 1] === '/') {
+      const bit = kod.indexOf('\n', i);
+      son = bit < 0 ? kod.length : bit;
+    } else if (c === '/' && kod[i + 1] === '*') {
+      const bit = kod.indexOf('*/', i + 2);
+      son = bit < 0 ? kod.length : bit + 2;
+    } else if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < kod.length && kod[j] !== c && kod[j] !== '\n') j += kod[j] === '\\' ? 2 : 1;
+      son = Math.min(j + 1, kod.length);
+    } else {
+      cikti += c;
+      i++;
+      continue;
+    }
+    cikti += bosalt(kod.slice(i, son));
+    i = son;
+  }
+  return cikti;
+}
+
 // Arduino IDE gibi: dosyada tanımlanan fonksiyonların bildirimlerini başa ekle,
 // böylece tanımından önce çağrılan fonksiyon da derlenir.
 export function inoDonustur(kod) {
-  // Yorumları aynı uzunlukta boşlukla değiştir; satır numaraları bozulmasın.
-  const ayiklanmis = kod
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
-    .replace(/\/\/[^\n]*/g, '');
+  const ayiklanmis = kodIskeleti(kod);
   const bildirimler = new Set();
   const desen = /^([A-Za-z_][\w:<>*&\s]*?[\s*&])([A-Za-z_]\w*)\s*\(([^()]*)\)\s*\{/gm;
   const anahtar = new Set(['if', 'for', 'while', 'switch', 'return', 'else', 'do', 'sizeof', 'catch']);

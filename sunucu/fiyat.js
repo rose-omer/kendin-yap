@@ -10,6 +10,16 @@ function sayi(yazi) {
   return Number(String(yazi).replace(/\./g, '').replace(',', '.'));
 }
 
+// Ürün adındaki HTML işaretlerini çöz: &quot; → ", &amp; → &, &#39; → ' …
+const ADLI = { quot: '"', amp: '&', apos: "'", lt: '<', gt: '>', nbsp: ' ' };
+function htmlCoz(yazi) {
+  return String(yazi ?? '')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&([a-z]+);/gi, (m, ad) => ADLI[ad.toLowerCase()] ?? m)
+    .trim();
+}
+
 // T-Soft altyapılı mağazalar sayfaya PRODUCT_DATA.push(JSON.parse('...')) ile ürün verisi koyar.
 function tsoftAyikla(html, kok) {
   const urunler = [];
@@ -17,7 +27,7 @@ function tsoftAyikla(html, kok) {
     try {
       const o = JSON.parse(JSON.parse(`"${m[1].replace(/\\'/g, "'")}"`));
       urunler.push({
-        ad: o.name,
+        ad: htmlCoz(o.name),
         fiyat: Number(o.total_sale_price ?? o.total_price),
         url: `${kok}/${String(o.url).replace(/^\//, '')}`,
         stok: Number(o.quantity) > 0 && o.available !== false,
@@ -37,7 +47,7 @@ function direncAyikla(html, kok) {
     const parca = html.slice(onceki, m.index + m[0].length);
     onceki = m.index + m[0].length;
     urunler.push({
-      ad: m[2].trim(),
+      ad: htmlCoz(m[2]),
       fiyat: sayi(m[3]),
       url: `${kok}/${m[1].replace(/^\//, '')}`,
       stok: !/Tükendi/.test(parca.slice(-4000)),
