@@ -1,0 +1,144 @@
+{
+  "surum": 1,
+  "id": "servo-ayar",
+  "baslik": "Düğmeyle servo kontrolü",
+  "ozet": "Potansiyometreyi çevirince servo motor aynı açıya döner.",
+  "zorluk": "Kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Düğme bir uçtayken servo 0°, öbür uçtayken 180° olur.",
+    "Servo titremeden düğmeyi izler."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 100,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "left": 170,
+      "top": 360,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "left": 360,
+      "top": -40,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "pot:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "pot:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pot:SIG",
+      "uno:A0",
+      "yellow",
+      [],
+      "Potansiyometrenin orta bacağı."
+    ],
+    [
+      "servo1:V+",
+      "uno:5V",
+      "red",
+      [],
+      "Servonun kırmızı kablosu."
+    ],
+    [
+      "servo1:GND",
+      "uno:GND.3",
+      "black",
+      [],
+      "Servonun kahverengi kablosu."
+    ],
+    [
+      "servo1:PWM",
+      "uno:9",
+      "orange",
+      [],
+      "Servonun turuncu kablosu."
+    ]
+  ],
+  "kod": {
+    "dosya": "servo-ayar.ino",
+    "kutuphaneler": [],
+    "icerik": "// Düğmeyle servo: potansiyometrenin açısını servoya aktar.\n#include <Servo.h>  // Arduino IDE ile gelir\n\nconst int POT_PIN = A0;\nconst int SERVO_PIN = 9;\n\nServo servo;\n\nvoid setup() {\n  Serial.begin(9600);\n  servo.attach(SERVO_PIN);\n}\n\nvoid loop() {\n  int deger = analogRead(POT_PIN);          // 0-1023\n  int aci = map(deger, 0, 1023, 0, 180);    // 0-180 derece\n  servo.write(aci);\n  Serial.println(aci);\n  delay(15);\n}\n"
+  },
+  "montaj": [
+    "Servonun kollarından birini tak; dönüşü görmek kolaylaşır.",
+    "Uno'nun 5V ve GND pinlerini breadboard'un + ve − hatlarına al.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Düğmeyi çevirince servo dönüyor.",
+    "Seri Port Ekranı (9600) 0 ile 180 arası açı yazıyor."
+  ],
+  "tanitim": {
+    "amac": "Bir düğmeyi çevirince motor kolunun aynı açıya dönmesi. Robot kolu, kamera yönlendirme ya da uzaktan kapı kilidinin temeli.",
+    "nasil": [
+      "Potansiyometre döndükçe orta bacağındaki gerilim 0–5 V arasında değişir.",
+      "Arduino bunu A0'dan 0–1023 arası sayı olarak okur.",
+      "map() ile sayıyı 0–180 dereceye çevirir.",
+      "Servo motor bu açıya döner."
+    ],
+    "ogrenilenler": [
+      "Analog okuma",
+      "map()",
+      "Servo motor",
+      "PWM"
+    ],
+    "demo": [
+      {
+        "sure": 2500,
+        "yazi": "Düğme en solda: servo 0°.",
+        "eylem": {
+          "tur": "pot",
+          "id": "pot",
+          "deger": 0
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Düğme ortada: servo 90°.",
+        "eylem": {
+          "tur": "pot",
+          "id": "pot",
+          "deger": 512
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Düğme en sağda: servo 180°.",
+        "eylem": {
+          "tur": "pot",
+          "id": "pot",
+          "deger": 1023
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Geri çevrildi: servo 50° civarı.",
+        "eylem": {
+          "tur": "pot",
+          "id": "pot",
+          "deger": 290
+        }
+      }
+    ]
+  }
+}

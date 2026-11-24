@@ -1,0 +1,211 @@
+{
+  "surum": 1,
+  "id": "bitki-sulama",
+  "baslik": "Otomatik bitki sulama",
+  "ozet": "Toprak kuruyunca su pompası 5 saniye çalışır. Pompa ayrı 5 V kaynaktan beslenir.",
+  "zorluk": "Orta",
+  "sure": "2 saat",
+  "gereksinimler": [
+    "Toprak kuruyunca pompa 5 saniye çalışır.",
+    "İki sulama arasında en az 1 dakika geçer.",
+    "Toprak nemliyken pompa çalışmaz."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 360,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "ky-modul",
+      "id": "toprak",
+      "left": 120,
+      "top": 20,
+      "attrs": {
+        "baslik": "Toprak nem sensörü",
+        "sag": "VCC,GND,AO",
+        "besleme": "VCC:3.3-5.5",
+        "gnd": "GND",
+        "renk": "#7a5230",
+        "arama": "kapasitif toprak nem sensörü",
+        "ozet": "Topraktaki nemi ölçer. AO analog çıkış."
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "role",
+      "left": 120,
+      "top": 190,
+      "attrs": {
+        "baslik": "Röle modülü (5 V, 1 kanal)",
+        "sol": "NO,COM,NC",
+        "sag": "VCC,GND,IN",
+        "besleme": "VCC:4.5-5.5",
+        "gnd": "GND",
+        "mcuCikis": "IN",
+        "renk": "#1d6fd8",
+        "arama": "5V tek kanal röle modülü",
+        "ozet": "Pompayı açıp kapatır."
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "guc",
+      "left": -140,
+      "top": 40,
+      "attrs": {
+        "baslik": "5 V güç kaynağı",
+        "sag": "+5V,GND",
+        "kaynak": "+5V:5",
+        "gnd": "GND",
+        "renk": "#c2410c",
+        "arama": "5V 2A adaptör",
+        "ozet": "Röle ve pompayı besler."
+      }
+    },
+    {
+      "type": "ky-modul",
+      "id": "pompa",
+      "left": -140,
+      "top": 220,
+      "attrs": {
+        "baslik": "Mini su pompası (5 V)",
+        "sag": "+,-",
+        "renk": "#0e8a8a",
+        "arama": "5V mini dalgıç su pompası",
+        "ozet": "Suyu hortumla basar."
+      }
+    }
+  ],
+  "connections": [
+    [
+      "toprak:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "toprak:VCC",
+      "esp:3V3",
+      "red",
+      [],
+      "3V3 kullan: 5 V ile sensörün çıkışı 3,3 V'u aşabilir."
+    ],
+    [
+      "toprak:AO",
+      "esp:D34",
+      "yellow",
+      [],
+      "D34 yalnız giriştir; analog okumak için uygundur."
+    ],
+    [
+      "role:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "role:IN",
+      "esp:D26",
+      "green",
+      [],
+      "Çoğu röle modülü 3,3 V sinyalle çalışır. Çekmezse 3,3 V uyumlu modül al."
+    ],
+    [
+      "role:VCC",
+      "guc:+5V",
+      "red",
+      []
+    ],
+    [
+      "guc:GND",
+      "esp:GND.2",
+      "black",
+      [],
+      "Ortak GND: kaynağın eksisi kartın GND'sine de gider."
+    ],
+    [
+      "guc:+5V",
+      "role:COM",
+      "red",
+      []
+    ],
+    [
+      "role:NO",
+      "pompa:+",
+      "orange",
+      [],
+      "NO: röle çekince kapanan uç."
+    ],
+    [
+      "pompa:-",
+      "guc:GND",
+      "black",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "bitki-sulama.ino",
+    "kutuphaneler": [],
+    "icerik": "// Otomatik bitki sulama: toprak kuruyunca pompayı 5 saniye çalıştır.\nconst int NEM_PIN = 34;                     // toprak nem sensörü AO\nconst int ROLE_PIN = 26;                    // röle modülü IN\nconst int KURU_ESIK = 2500;                 // bunun üstü \"kuru\". Seri ekrandaki değere göre ayarla.\nconst unsigned long SULAMA_MS = 5000;       // pompa çalışma süresi\nconst unsigned long BEKLEME_MS = 60000UL;   // iki sulama arası en az 1 dakika\n\n// Çoğu röle modülü LOW ile çeker. Seninki HIGH ile çekiyorsa bu iki satırı değiştir.\nconst int ROLE_ACIK = LOW;\nconst int ROLE_KAPALI = HIGH;\n\nunsigned long sonSulama = 0;\nbool hicSulanmadi = true;\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(ROLE_PIN, OUTPUT);\n  digitalWrite(ROLE_PIN, ROLE_KAPALI);\n}\n\nvoid loop() {\n  int nem = analogRead(NEM_PIN);  // 0-4095. Kapasitif sensörde kuru toprak = yüksek değer.\n  Serial.printf(\"Nem okumasi: %d\\n\", nem);\n\n  bool kuru = nem > KURU_ESIK;\n  bool beklemeBitti = hicSulanmadi || millis() - sonSulama > BEKLEME_MS;\n\n  if (kuru && beklemeBitti) {\n    Serial.println(\"Toprak kuru: pompa calisiyor.\");\n    digitalWrite(ROLE_PIN, ROLE_ACIK);\n    delay(SULAMA_MS);\n    digitalWrite(ROLE_PIN, ROLE_KAPALI);\n    sonSulama = millis();\n    hicSulanmadi = false;\n  }\n  delay(1000);\n}\n"
+  },
+  "montaj": [
+    "Pompayı ve hortumu takmadan önce elektronik kısmı kur ve test et.",
+    "5 V kaynağın + ve − uçlarını breadboard'un ayrı bir güç hattına al.",
+    "Kaynağın GND'sini ESP32'nin GND'sine bağla (ortak GND).",
+    "Röle modülünün vida klemenslerine (COM, NO) pompa kablolarını sık.",
+    "Sensörü toprağa yalnız çizgisine kadar göm; elektronik kısmı ıslatma."
+  ],
+  "testler": [
+    "Sensör havadayken Seri Port Ekranı yüksek değer gösteriyor (kuru).",
+    "Sensörü bir bardak suya batırınca değer düşüyor (ıslak).",
+    "Sensör havadayken röle \"tık\" sesiyle çekiyor ve pompa 5 saniye çalışıyor.",
+    "Sensör sudayken pompa çalışmıyor."
+  ],
+  "tanitim": {
+    "amac": "Tatile gidince saksıdaki bitki kurumasın. Toprak kuruyunca küçük bir pompa 5 saniye su verir, sonra durur.",
+    "nasil": [
+      "Toprak nem sensörü topraktaki suyu ölçer; ESP32 bunu analog pinden (D34) okur.",
+      "Değer eşiği aşarsa (toprak kuru) ESP32 röleyi çektirir.",
+      "Röle, pompanın 5 V devresini kapatır; pompa su basar.",
+      "5 saniye sonra röle bırakılır. İki sulama arasında en az 1 dakika beklenir."
+    ],
+    "ogrenilenler": [
+      "Analog okuma",
+      "Röle ile yük sürme",
+      "Ayrı güç kaynağı",
+      "Ortak GND"
+    ],
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "Toprak nemli (%80): pompa çalışmaz.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "toprak",
+          "deger": 80
+        }
+      },
+      {
+        "sure": 7000,
+        "yazi": "Toprak kurudu (%10): röle çeker, pompa 5 saniye su verir.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "toprak",
+          "deger": 10
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Su verildi, toprak nemlendi: pompa durur.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "toprak",
+          "deger": 75
+        }
+      }
+    ]
+  }
+}

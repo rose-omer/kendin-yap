@@ -1,0 +1,153 @@
+{
+  "surum": 1,
+  "id": "mqtt-akilli-ev",
+  "baslik": "MQTT ile akıllı ev",
+  "ozet": "ESP32 oda sıcaklığını MQTT ile yayınlar; \"ev/salon/lamba\" konusuna gelen \"ac\" ya da \"kapat\" mesajıyla lambayı (LED) yönetir.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Sıcaklık 5 saniyede bir \"ev/salon/sicaklik\" konusuna gider.",
+    "\"ev/salon/lamba\" konusuna \"ac\" gelince LED yanar, \"kapat\" gelince söner.",
+    "Bağlantı koparsa ESP32 kendisi yeniden bağlanır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "left": 260,
+      "top": -110,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 170,
+      "top": 150,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 260,
+      "top": 90,
+      "attrs": {
+        "color": "yellow"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "dht:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "dht:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "dht:SDA",
+      "esp:D4",
+      "green",
+      []
+    ],
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:2",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:1",
+      "esp:D2",
+      "blue",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "mqtt-akilli-ev.ino",
+    "kutuphaneler": [
+      "PubSubClient",
+      "DHT sensor library (Adafruit)",
+      "Adafruit Unified Sensor"
+    ],
+    "icerik": "// MQTT ile akıllı ev: sıcaklığı yayınla, lamba komutunu dinle.\n#include <WiFi.h>\n#include <PubSubClient.h>\n#include <DHT.h>\n\nconst char* AG_ADI = \"EvimWiFi\";             // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";            // kendi Wi-Fi parolan\nconst char* MQTT_SUNUCU = \"broker.hivemq.com\"; // ücretsiz genel sunucu; kendi sunucunu da yazabilirsin\nconst char* KONU_SICAKLIK = \"ev/salon/sicaklik\";\nconst char* KONU_LAMBA = \"ev/salon/lamba\";\nconst int DHT_PIN = 4;\nconst int LAMBA_PIN = 2;\nconst unsigned long YAYIN_ARALIGI_MS = 5000;\n\nWiFiClient wifiIstemci;\nPubSubClient mqtt(wifiIstemci);\nDHT dht(DHT_PIN, DHT22);\nunsigned long sonYayin = 0;\n\n// Abone olunan konuya mesaj gelince çağrılır.\nvoid mesajGeldi(char* konu, byte* veri, unsigned int uzunluk) {\n  String mesaj;\n  for (unsigned int i = 0; i < uzunluk; i++) mesaj += (char)veri[i];\n  Serial.printf(\"Mesaj: %s = %s\\n\", konu, mesaj.c_str());\n  if (String(konu) == KONU_LAMBA) {\n    if (mesaj == \"ac\") digitalWrite(LAMBA_PIN, HIGH);\n    if (mesaj == \"kapat\") digitalWrite(LAMBA_PIN, LOW);\n  }\n}\n\nvoid mqttBaglan() {\n  while (!mqtt.connected()) {\n    Serial.print(\"MQTT'ye baglaniyor... \");\n    if (mqtt.connect(\"kendinyap-esp32\")) {\n      Serial.println(\"tamam\");\n      mqtt.subscribe(KONU_LAMBA);\n    } else {\n      Serial.println(\"olmadi, 2 sn sonra tekrar\");\n      delay(2000);\n    }\n  }\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(LAMBA_PIN, OUTPUT);\n  dht.begin();\n  WiFi.begin(AG_ADI, PAROLA);\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  Serial.print(\"Wi-Fi tamam, IP: \");\n  Serial.println(WiFi.localIP());\n  mqtt.setServer(MQTT_SUNUCU, 1883);\n  mqtt.setCallback(mesajGeldi);\n}\n\nvoid loop() {\n  if (!mqtt.connected()) mqttBaglan();\n  mqtt.loop();\n  if (millis() - sonYayin > YAYIN_ARALIGI_MS) {\n    sonYayin = millis();\n    float sicaklik = dht.readTemperature();\n    if (!isnan(sicaklik)) {\n      String deger = String(sicaklik, 1);\n      mqtt.publish(KONU_SICAKLIK, deger.c_str());\n      Serial.printf(\"Yayinlandi: %s = %s\\n\", KONU_SICAKLIK, deger.c_str());\n    }\n  }\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "Telefona bir MQTT uygulaması kur (ör. \"MQTT Dash\", \"IoT MQTT Panel\") ve aynı sunucuya bağlan.",
+    "Uygulamada \"ev/salon/lamba\" için bir düğme ekle: basınca \"ac\", bırakınca \"kapat\" göndersin."
+  ],
+  "testler": [
+    "Simülasyonda MQTT panelinde 5 saniyede bir sıcaklık mesajı görünüyor.",
+    "Panelden \"ev/salon/lamba\" konusuna \"ac\" yayınla: LED yanıyor.",
+    "\"kapat\" yayınla: LED sönüyor."
+  ],
+  "tanitim": {
+    "amac": "Akıllı ev sistemlerinin temeli. ESP32 oda sıcaklığını bir MQTT sunucusuna gönderir; telefondaki uygulama hem sıcaklığı görür hem de lambayı yakıp söndürür. Home Assistant gibi sistemler de bu yolla konuşur.",
+    "nasil": [
+      "ESP32 Wi-Fi'ye, sonra MQTT sunucusuna bağlanır.",
+      "Her 5 saniyede sıcaklığı \"ev/salon/sicaklik\" konusuna yayınlar.",
+      "\"ev/salon/lamba\" konusunu dinler (abone olur).",
+      "Telefondan \"ac\" ya da \"kapat\" gelince LED'i yakar ya da söndürür."
+    ],
+    "ogrenilenler": [
+      "MQTT yayınla/abone ol",
+      "Konu (topic) düzeni",
+      "Akıllı ev mantığı"
+    ],
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "Wi-Fi ve MQTT sunucusuna bağlanıyor…"
+      },
+      {
+        "sure": 5500,
+        "yazi": "Sıcaklık her 5 saniyede \"ev/salon/sicaklik\" konusuna gider.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 27
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Telefon uygulamasından \"ac\" geldi: lamba yanar.",
+        "eylem": {
+          "tur": "mqtt",
+          "konu": "ev/salon/lamba",
+          "veri": "ac"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "\"kapat\" geldi: lamba söner.",
+        "eylem": {
+          "tur": "mqtt",
+          "konu": "ev/salon/lamba",
+          "veri": "kapat"
+        }
+      }
+    ]
+  }
+}

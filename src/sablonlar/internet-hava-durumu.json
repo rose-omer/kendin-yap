@@ -1,0 +1,103 @@
+{
+  "surum": 1,
+  "id": "internet-hava-durumu",
+  "baslik": "İnternetten hava durumu",
+  "ozet": "ESP32 internetten dışarıdaki sıcaklığı çeker; saatle birlikte OLED ekranda gösterir.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Ekranda saat (SS:DD:ss) ve dışarıdaki sıcaklık görünür.",
+    "Sıcaklık dakikada bir yenilenir.",
+    "İnternet yoksa ekranda \"-- C\" görünür."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "left": 230,
+      "top": 60,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "oled:VIN",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "oled:DATA",
+      "esp:D21",
+      "blue",
+      [],
+      "Modülde SDA yazar."
+    ],
+    [
+      "oled:CLK",
+      "esp:D22",
+      "yellow",
+      [],
+      "Modülde SCL yazar."
+    ]
+  ],
+  "kod": {
+    "dosya": "internet-hava-durumu.ino",
+    "kutuphaneler": [
+      "Adafruit SSD1306",
+      "Adafruit GFX Library"
+    ],
+    "icerik": "// İnternetten hava durumu: open-meteo.com'dan sıcaklığı çek, saatle OLED'de göster.\n#include <WiFi.h>\n#include <HTTPClient.h>\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n\nconst char* AG_ADI = \"EvimWiFi\";     // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";    // kendi Wi-Fi parolan\n// Konum: İstanbul. Kendi şehrin için enlem ve boylamı değiştir.\nconst char* ADRES = \"https://api.open-meteo.com/v1/forecast?latitude=41.01&longitude=28.97&current=temperature_2m\";\nconst long SAAT_DILIMI = 3 * 3600;            // Türkiye: UTC+3\nconst unsigned long GUNCELLEME_MS = 60000;    // dakikada bir\n\nAdafruit_SSD1306 ekran(128, 64, &Wire, -1);\nfloat sicaklik = NAN;\nunsigned long sonGuncelleme = 0;\nbool ilkKez = true;\n\nfloat sicaklikAl() {\n  HTTPClient http;\n  http.begin(ADRES);\n  int kod = http.GET();\n  float sonuc = NAN;\n  if (kod == 200) {\n    String json = http.getString();\n    int bas = json.indexOf(\"\\\"current\\\"\");\n    int i = json.indexOf(\"\\\"temperature_2m\\\":\", bas);\n    if (bas >= 0 && i >= 0) sonuc = json.substring(i + 17).toFloat();\n  } else {\n    Serial.printf(\"HTTP hatasi: %d\\n\", kod);\n  }\n  http.end();\n  return sonuc;\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  Wire.begin(21, 22);\n  ekran.begin(SSD1306_SWITCHCAPVCC, 0x3C);\n  ekran.setTextColor(SSD1306_WHITE);\n  ekran.clearDisplay();\n  ekran.setCursor(0, 0);\n  ekran.println(\"Wi-Fi baglaniyor...\");\n  ekran.display();\n\n  WiFi.begin(AG_ADI, PAROLA);\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  Serial.print(\"IP: \");\n  Serial.println(WiFi.localIP());\n  configTime(SAAT_DILIMI, 0, \"pool.ntp.org\");\n}\n\nvoid loop() {\n  if (ilkKez || millis() - sonGuncelleme > GUNCELLEME_MS) {\n    ilkKez = false;\n    sicaklik = sicaklikAl();\n    sonGuncelleme = millis();\n    Serial.printf(\"Disarisi: %.1f C\\n\", sicaklik);\n  }\n\n  ekran.clearDisplay();\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  ekran.println(\"Istanbul\");\n  struct tm saat;\n  if (getLocalTime(&saat)) {\n    ekran.setTextSize(2);\n    ekran.setCursor(0, 14);\n    ekran.printf(\"%02d:%02d:%02d\", saat.tm_hour, saat.tm_min, saat.tm_sec);\n  }\n  ekran.setTextSize(2);\n  ekran.setCursor(0, 40);\n  if (isnan(sicaklik)) {\n    ekran.println(\"-- C\");\n  } else {\n    ekran.print(sicaklik, 1);\n    ekran.println(\" C\");\n  }\n  ekran.display();\n  delay(1000);\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "OLED'i 3V3, GND, SDA (D21), SCL (D22) ile bağla."
+  ],
+  "testler": [
+    "Simülasyonda ekranda saat saniye saniye ilerliyor.",
+    "Wi-Fi panelinde open-meteo isteği 200 dönüyor; ekranda sıcaklık görünüyor.",
+    "Gerçek kartta da aynı değerler görünüyor."
+  ],
+  "tanitim": {
+    "amac": "İnternetten dışarıdaki sıcaklığı çekip saatle birlikte gösteren mini ekran. Kapının yanına koyarsan çıkmadan havayı görürsün.",
+    "nasil": [
+      "ESP32 Wi-Fi'ye bağlanır, saati internetten alır.",
+      "open-meteo.com'a istek gönderir; cevap JSON biçimindedir.",
+      "JSON içinden \"temperature_2m\" değerini ayıklar.",
+      "OLED ekrana saati ve sıcaklığı yazar; sıcaklık dakikada bir yenilenir."
+    ],
+    "ogrenilenler": [
+      "HTTP isteği",
+      "JSON ayıklama",
+      "İnternetten saat",
+      "OLED ekran"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Wi-Fi'ye bağlanıyor…"
+      },
+      {
+        "sure": 3500,
+        "yazi": "İnternetten sıcaklık çekiliyor (open-meteo.com)."
+      },
+      {
+        "sure": 4500,
+        "yazi": "Ekranda canlı saat ve dışarıdaki sıcaklık."
+      }
+    ]
+  }
+}

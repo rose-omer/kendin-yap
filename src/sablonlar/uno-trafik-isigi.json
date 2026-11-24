@@ -1,0 +1,179 @@
+{
+  "surum": 1,
+  "id": "uno-trafik-isigi",
+  "baslik": "Trafik ışığı (Uno)",
+  "ozet": "Kırmızı, sarı ve yeşil LED gerçek trafik ışığı sırasıyla yanar.",
+  "zorluk": "Kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Sıra: kırmızı 3 sn, kırmızı+sarı 1 sn, yeşil 3 sn, sarı 1 sn.",
+    "Sıra sonsuza kadar tekrar eder."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "kirmizi",
+      "left": 60,
+      "top": 20,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "sari",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "yesil",
+      "left": 240,
+      "top": 20,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 52,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "left": 232,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "kirmizi:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sari:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "yesil:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "kirmizi:A",
+      "r1:1",
+      "orange",
+      []
+    ],
+    [
+      "r1:2",
+      "uno:10",
+      "red",
+      []
+    ],
+    [
+      "sari:A",
+      "r2:1",
+      "orange",
+      []
+    ],
+    [
+      "r2:2",
+      "uno:9",
+      "yellow",
+      []
+    ],
+    [
+      "yesil:A",
+      "r3:1",
+      "orange",
+      []
+    ],
+    [
+      "r3:2",
+      "uno:8",
+      "green",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-trafik-isigi.ino",
+    "kutuphaneler": [],
+    "icerik": "// Trafik ışığı: kırmızı → kırmızı+sarı → yeşil → sarı → kırmızı...\nconst int KIRMIZI_PIN = 10;\nconst int SARI_PIN = 9;\nconst int YESIL_PIN = 8;\n\nvoid isiklar(bool kirmizi, bool sari, bool yesil) {\n  digitalWrite(KIRMIZI_PIN, kirmizi);\n  digitalWrite(SARI_PIN, sari);\n  digitalWrite(YESIL_PIN, yesil);\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(KIRMIZI_PIN, OUTPUT);\n  pinMode(SARI_PIN, OUTPUT);\n  pinMode(YESIL_PIN, OUTPUT);\n}\n\nvoid loop() {\n  Serial.println(\"Kirmizi\");\n  isiklar(true, false, false);\n  delay(3000);\n  Serial.println(\"Kirmizi + sari\");\n  isiklar(true, true, false);\n  delay(1000);\n  Serial.println(\"Yesil\");\n  isiklar(false, false, true);\n  delay(3000);\n  Serial.println(\"Sari\");\n  isiklar(false, true, false);\n  delay(1000);\n}\n"
+  },
+  "montaj": [
+    "LED'leri soldan sağa kırmızı, sarı, yeşil diz.",
+    "Her LED'in uzun bacağına bir 220 Ω direnç bağla.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Simülasyonda ışıklar doğru sırayla yanıyor.",
+    "Seri ekran her adımın adını yazıyor."
+  ],
+  "tanitim": {
+    "amac": "Gerçek bir trafik ışığının sırası: kırmızı, kırmızı-sarı, yeşil, sarı. Oyuncak yol, maket ya da okul projesi için.",
+    "nasil": [
+      "Her renk ayrı bir pine ve ayrı bir 220 Ω dirence bağlıdır.",
+      "Kod ışıkları belirli sürelerle sırayla yakar.",
+      "Sıra bitince baştan başlar."
+    ],
+    "ogrenilenler": [
+      "Birden çok çıkış",
+      "Fonksiyon yazma",
+      "Zamanlama"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Kırmızı: dur (3 sn)."
+      },
+      {
+        "sure": 1000,
+        "yazi": "Kırmızı + sarı: hazırlan."
+      },
+      {
+        "sure": 3000,
+        "yazi": "Yeşil: geç (3 sn)."
+      },
+      {
+        "sure": 1000,
+        "yazi": "Sarı: dikkat."
+      }
+    ]
+  }
+}

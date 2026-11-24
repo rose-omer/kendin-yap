@@ -1,0 +1,115 @@
+{
+  "surum": 1,
+  "id": "bluetooth-led",
+  "baslik": "Bluetooth ile LED",
+  "ozet": "Telefondaki Bluetooth terminal uygulamasından \"ac\" ya da \"kapat\" yazınca ESP32 LED'i yakar ya da söndürür ve cevap verir.",
+  "zorluk": "Kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Telefon \"KendinYap-LED\" adlı cihaza bağlanır.",
+    "\"ac\" yazınca LED yanar; ESP32 \"LED acildi\" cevabı verir.",
+    "Bilinmeyen komutta ESP32 yardım metni gönderir."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 170,
+      "top": 150,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 260,
+      "top": 90,
+      "attrs": {
+        "color": "yellow"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:2",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:1",
+      "esp:D2",
+      "blue",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "bluetooth-led.ino",
+    "kutuphaneler": [],
+    "icerik": "// Bluetooth ile LED: telefondan \"ac\" / \"kapat\" komutu.\n// Telefona \"Serial Bluetooth Terminal\" gibi bir uygulama kur ve KendinYap-LED cihazına bağlan.\n#include <BluetoothSerial.h>\n\nconst int LED_PIN = 2;\nBluetoothSerial SerialBT;\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(LED_PIN, OUTPUT);\n  SerialBT.begin(\"KendinYap-LED\");\n  Serial.println(\"Bluetooth hazir: KendinYap-LED\");\n}\n\nvoid loop() {\n  if (SerialBT.available()) {\n    String komut = SerialBT.readStringUntil('\\n');\n    komut.trim();\n    komut.toLowerCase();\n    Serial.println(\"Komut: \" + komut);\n    if (komut == \"ac\") {\n      digitalWrite(LED_PIN, HIGH);\n      SerialBT.println(\"LED acildi\");\n    } else if (komut == \"kapat\") {\n      digitalWrite(LED_PIN, LOW);\n      SerialBT.println(\"LED kapandi\");\n    } else {\n      SerialBT.println(\"Komutlar: ac, kapat\");\n    }\n  }\n  delay(20);\n}\n"
+  },
+  "montaj": [
+    "LED'i dirençle D2 pinine bağla.",
+    "Kodu yükle; telefonda Bluetooth ayarlarından KendinYap-LED ile eşleş.",
+    "Terminal uygulamasında cihaza bağlan ve \"ac\" yaz."
+  ],
+  "testler": [
+    "Simülasyonda Bluetooth panelinde \"Telefonla bağlan\"a bas, \"ac\" gönder: LED yanıyor.",
+    "\"kapat\" gönder: LED sönüyor, ESP32 \"LED kapandi\" diyor."
+  ],
+  "tanitim": {
+    "amac": "İnternet olmadan, telefonla yakından kontrol. Telefondaki Bluetooth terminal uygulamasından yazı yazarak LED'i yönetirsin. Oyuncak araba ya da masa lambası için iyi bir başlangıç.",
+    "nasil": [
+      "ESP32 \"KendinYap-LED\" adıyla Bluetooth cihazı olarak görünür.",
+      "Telefon cihaza bağlanır ve terminal uygulamasından yazı gönderir.",
+      "ESP32 gelen satırı okur: \"ac\" ise LED'i yakar, \"kapat\" ise söndürür.",
+      "Her komuttan sonra telefona cevap yazar."
+    ],
+    "ogrenilenler": [
+      "Klasik Bluetooth (SPP)",
+      "Komut ayrıştırma",
+      "String işlemleri"
+    ],
+    "demo": [
+      {
+        "sure": 2500,
+        "yazi": "Telefon Bluetooth ile bağlandı.",
+        "eylem": {
+          "tur": "btbaglan"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Telefondan \"ac\" yazıldı: LED yanar, ESP32 \"LED acildi\" der.",
+        "eylem": {
+          "tur": "bt",
+          "veri": "ac"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "\"kapat\" yazıldı: LED söner.",
+        "eylem": {
+          "tur": "bt",
+          "veri": "kapat"
+        }
+      }
+    ]
+  }
+}

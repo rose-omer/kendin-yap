@@ -1,0 +1,145 @@
+{
+  "surum": 1,
+  "id": "uno-buton-led",
+  "baslik": "Butonla LED (Uno)",
+  "ozet": "Butona her basışta LED yanar ya da söner. Simülasyonda butona tıklayarak dene.",
+  "zorluk": "Kolay",
+  "sure": "20 dakika",
+  "gereksinimler": [
+    "Butona bir kez basınca LED yanar.",
+    "Bir kez daha basınca LED söner."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "left": 300,
+      "top": 60,
+      "attrs": {
+        "color": "blue"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "btn1:2.l",
+      "uno:GND.1",
+      "black",
+      [],
+      "Butonun bir bacağı GND'ye."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      []
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "green",
+      []
+    ],
+    [
+      "btn1:1.l",
+      "uno:2",
+      "blue",
+      [],
+      "Öbür bacak 2. pine. Kod iç pull-up direncini açar."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-buton-led.ino",
+    "kutuphaneler": [],
+    "icerik": "// Butonla LED: her basışta LED'in durumu değişir.\nconst int BUTON_PIN = 2;   // butonun öbür ucu GND'de; iç pull-up açık\nconst int LED_PIN = 9;\nconst unsigned long TITRESIM_MS = 50;  // buton sıçramasını yok sayma süresi\n\nbool ledAcik = false;\nint oncekiOkuma = HIGH;\nunsigned long sonDegisim = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(BUTON_PIN, INPUT_PULLUP);\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n  int okuma = digitalRead(BUTON_PIN);\n  if (okuma != oncekiOkuma && millis() - sonDegisim > TITRESIM_MS) {\n    sonDegisim = millis();\n    if (okuma == LOW) {            // basıldı\n      ledAcik = !ledAcik;\n      digitalWrite(LED_PIN, ledAcik ? HIGH : LOW);\n      Serial.println(ledAcik ? \"LED acik\" : \"LED kapali\");\n    }\n    oncekiOkuma = okuma;\n  }\n}\n"
+  },
+  "montaj": [
+    "Butonu breadboard'un ortasındaki boşluğun üstüne tak.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Simülasyonda butona tıkla: LED yanıyor.",
+    "Bir kez daha tıkla: LED sönüyor."
+  ],
+  "tanitim": {
+    "amac": "Bir butonla lambayı açıp kapatmak. Her basışta durum değişir: tıpkı duvardaki ışık anahtarı gibi.",
+    "nasil": [
+      "Butonun bir bacağı GND'ye, öbürü 2. pine gider. Kod pinin iç pull-up direncini açar.",
+      "Basılmazken pin HIGH, basılınca LOW okunur.",
+      "Her basışta LED'in durumu tersine döner.",
+      "Buton sıçramasını önlemek için 50 ms beklenir."
+    ],
+    "ogrenilenler": [
+      "INPUT_PULLUP",
+      "Buton okuma",
+      "Sıçrama (debounce)",
+      "Durum tutma"
+    ],
+    "demo": [
+      {
+        "sure": 500,
+        "yazi": "Butona basıldı: LED yanar.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn1"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Butona basıldı: LED yanar.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn1"
+        }
+      },
+      {
+        "sure": 500,
+        "yazi": "Tekrar basıldı: LED söner.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn1"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Tekrar basıldı: LED söner.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn1"
+        }
+      }
+    ]
+  }
+}

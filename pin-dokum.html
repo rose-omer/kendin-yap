@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>pin dökümü</title>
+<div id="kap"></div>
+<script type="module">
+import * as W from '@wokwi/elements';
+const tags = [...new Set(Object.values(W).filter(c => typeof c === 'function' && c.prototype instanceof HTMLElement).map(c => customElements.getName(c)).filter(Boolean))].sort();
+const kap = document.getElementById('kap');
+const sonuc = {};
+for (const t of tags) {
+  const el = document.createElement(t);
+  el.style.display = "inline-block"; el.style.position = "absolute"; el.style.left = "0"; el.style.top = "0";
+  kap.appendChild(el);
+  await el.updateComplete;
+  const r = el.getBoundingClientRect();
+  sonuc[t] = { w: +r.width.toFixed(2), h: +r.height.toFixed(2), pins: (el.pinInfo || []).map(p => ({ name: p.name, x: p.x, y: p.y, signals: p.signals })) };
+}
+window.SONUC = sonuc;
+await fetch('/__pinler', { method: 'POST', body: JSON.stringify(sonuc) });
+document.title = 'hazir ' + tags.length;
+</script>

@@ -1,0 +1,114 @@
+{
+  "surum": 1,
+  "id": "wifi-led-kontrol",
+  "baslik": "Wi-Fi ile LED kontrolü",
+  "ozet": "ESP32 bir web sayfası sunar. Telefondan ya da bilgisayardan \"Aç\" ve \"Kapat\" düğmeleriyle LED'i yönetirsin.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "ESP32 Wi-Fi'ye bağlanır ve IP adresini seri ekrana yazar.",
+    "Tarayıcıda IP adresi açılınca kontrol sayfası gelir.",
+    "\"Aç\" LED'i yakar, \"Kapat\" söndürür; sayfa LED'in durumunu gösterir."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 170,
+      "top": 110,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 260,
+      "top": 40,
+      "attrs": {
+        "color": "green"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:2",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:1",
+      "esp:D4",
+      "green",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "wifi-led-kontrol.ino",
+    "kutuphaneler": [],
+    "icerik": "// Wi-Fi ile LED kontrolü: ESP32 web sunucusu açar, sayfadaki düğmeler LED'i yönetir.\n#include <WiFi.h>\n#include <WebServer.h>\n\nconst char* AG_ADI = \"EvimWiFi\";     // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";    // kendi Wi-Fi parolan\nconst int LED_PIN = 4;\n\nWebServer sunucu(80);\nbool ledAcik = false;\n\nString sayfa() {\n  String s = \"<!doctype html><html><head><meta charset='utf-8'>\";\n  s += \"<meta name='viewport' content='width=device-width,initial-scale=1'><title>ESP32 LED</title>\";\n  s += \"<style>body{font-family:sans-serif;text-align:center;padding:24px}\";\n  s += \"a{display:inline-block;margin:8px;padding:14px 28px;border-radius:10px;color:#fff;text-decoration:none;font-size:20px}</style>\";\n  s += \"</head><body><h1>ESP32 LED kontrolü</h1><p>LED şu an: <b>\";\n  s += ledAcik ? \"AÇIK\" : \"KAPALI\";\n  s += \"</b></p><a href='/ac' style='background:#16a34a'>Aç</a><a href='/kapat' style='background:#dc2626'>Kapat</a>\";\n  s += \"<p>Çalışma süresi: \" + String(millis() / 1000) + \" sn</p></body></html>\";\n  return s;\n}\n\nvoid anaSayfa() {\n  sunucu.send(200, \"text/html\", sayfa());\n}\n\nvoid ledAc() {\n  ledAcik = true;\n  digitalWrite(LED_PIN, HIGH);\n  sunucu.sendHeader(\"Location\", \"/\");\n  sunucu.send(303);\n}\n\nvoid ledKapat() {\n  ledAcik = false;\n  digitalWrite(LED_PIN, LOW);\n  sunucu.sendHeader(\"Location\", \"/\");\n  sunucu.send(303);\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(LED_PIN, OUTPUT);\n  WiFi.mode(WIFI_STA);\n  WiFi.begin(AG_ADI, PAROLA);\n  Serial.print(\"Wi-Fi'ye baglaniyor\");\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  Serial.print(\"Baglandi. Tarayicida ac: http://\");\n  Serial.println(WiFi.localIP());\n\n  sunucu.on(\"/\", anaSayfa);\n  sunucu.on(\"/ac\", ledAc);\n  sunucu.on(\"/kapat\", ledKapat);\n  sunucu.begin();\n}\n\nvoid loop() {\n  sunucu.handleClient();\n}\n"
+  },
+  "montaj": [
+    "Koddaki AG_ADI ve PAROLA satırlarına kendi Wi-Fi bilgilerini yaz.",
+    "LED'i dirençle D4 pinine bağla.",
+    "Kodu yükle, seri ekrandaki IP adresini telefonda aç (telefon aynı Wi-Fi'de olmalı)."
+  ],
+  "testler": [
+    "Simülasyonda Wi-Fi panelindeki sayfada \"Aç\"a bas: LED yanıyor.",
+    "\"Kapat\"a bas: LED sönüyor, sayfa \"KAPALI\" yazıyor.",
+    "Gerçek kartta telefondan aynı sayfa açılıyor."
+  ],
+  "tanitim": {
+    "amac": "Evdeki bir lambayı telefondan açıp kapatmanın ilk adımı. ESP32 kendi web sayfasını sunar; aynı ağdaki telefon ya da bilgisayar bu sayfadan LED'i yönetir.",
+    "nasil": [
+      "ESP32 ev Wi-Fi'sine bağlanır ve bir IP adresi alır.",
+      "Kartta küçük bir web sunucusu çalışır.",
+      "Tarayıcıda IP adresi açılınca \"Aç / Kapat\" düğmeli sayfa gelir.",
+      "\"Aç\" düğmesi /ac adresine gider; ESP32 LED'i yakar ve sayfayı yeniler."
+    ],
+    "ogrenilenler": [
+      "Wi-Fi bağlantısı",
+      "Web sunucusu",
+      "HTML sayfa",
+      "Uzaktan kontrol"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "ESP32 Wi-Fi ağına bağlanıyor ve IP alıyor."
+      },
+      {
+        "sure": 3000,
+        "yazi": "Telefonda \"Aç\" düğmesine basıldı: LED yanar.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/ac"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "\"Kapat\" düğmesine basıldı: LED söner.",
+        "eylem": {
+          "tur": "web",
+          "yol": "/kapat"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "surum": 1,
+  "id": "ble-termometre",
+  "baslik": "BLE termometre",
+  "ozet": "ESP32 sıcaklığı Bluetooth LE ile telefona bildirir. Telefondan \"1\" yazınca uyarı LED'i yanar, \"0\" yazınca söner.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Telefon \"KendinYap-Termometre\" cihazını görür ve bağlanır.",
+    "Sıcaklık 2 saniyede bir bildirim olarak gelir.",
+    "LED özelliğine \"1\" yazınca LED yanar, \"0\" yazınca söner."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "left": 260,
+      "top": -110,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 170,
+      "top": 150,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 260,
+      "top": 90,
+      "attrs": {
+        "color": "yellow"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "dht:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "dht:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "dht:SDA",
+      "esp:D4",
+      "green",
+      []
+    ],
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:2",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:1",
+      "esp:D2",
+      "blue",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "ble-termometre.ino",
+    "kutuphaneler": [
+      "DHT sensor library (Adafruit)",
+      "Adafruit Unified Sensor"
+    ],
+    "icerik": "// BLE termometre: sıcaklığı bildir, LED'i yazmayla yönet.\n// Telefona \"nRF Connect\" ya da \"LightBlue\" uygulamasını kur, KendinYap-Termometre'ye bağlan.\n#include <BLEDevice.h>\n#include <BLEServer.h>\n#include <BLEUtils.h>\n#include <BLE2902.h>\n#include <DHT.h>\n\n#define SERVIS_UUID   \"4fafc201-1fb5-459e-8fcc-c5c9c331914b\"\n#define SICAKLIK_UUID \"beb5483e-36e1-4688-b7f5-ea07361b26a8\"\n#define LED_UUID      \"e3223119-9445-4e96-a4a1-85358c4046a2\"\n\nconst int DHT_PIN = 4;\nconst int LED_PIN = 2;\nDHT dht(DHT_PIN, DHT22);\nBLECharacteristic* sicaklikOzelligi;\nbool telefonBagli = false;\n\nclass SunucuOlaylari : public BLEServerCallbacks {\n  void onConnect(BLEServer*) override { telefonBagli = true; Serial.println(\"Telefon baglandi\"); }\n  void onDisconnect(BLEServer* s) override {\n    telefonBagli = false;\n    Serial.println(\"Telefon ayrildi\");\n    s->startAdvertising();  // tekrar görünür ol\n  }\n};\n\nclass LedOlaylari : public BLECharacteristicCallbacks {\n  void onWrite(BLECharacteristic* c) override {\n    String deger = c->getValue();\n    digitalWrite(LED_PIN, deger == \"1\" ? HIGH : LOW);\n    Serial.println(\"LED: \" + deger);\n  }\n};\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(LED_PIN, OUTPUT);\n  dht.begin();\n\n  BLEDevice::init(\"KendinYap-Termometre\");\n  BLEServer* sunucu = BLEDevice::createServer();\n  sunucu->setCallbacks(new SunucuOlaylari());\n  BLEService* servis = sunucu->createService(SERVIS_UUID);\n\n  sicaklikOzelligi = servis->createCharacteristic(SICAKLIK_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);\n  sicaklikOzelligi->addDescriptor(new BLE2902());\n\n  BLECharacteristic* ledOzelligi = servis->createCharacteristic(LED_UUID, BLECharacteristic::PROPERTY_WRITE);\n  ledOzelligi->setCallbacks(new LedOlaylari());\n\n  servis->start();\n  BLEAdvertising* yayin = BLEDevice::getAdvertising();\n  yayin->addServiceUUID(SERVIS_UUID);\n  BLEDevice::startAdvertising();\n  Serial.println(\"BLE hazir: KendinYap-Termometre\");\n}\n\nvoid loop() {\n  float sicaklik = dht.readTemperature();\n  if (!isnan(sicaklik)) {\n    sicaklikOzelligi->setValue(String(sicaklik, 1));\n    if (telefonBagli) sicaklikOzelligi->notify();\n  }\n  delay(2000);\n}\n"
+  },
+  "montaj": [
+    "DHT22'yi D4'e, LED'i dirençle D2'ye bağla.",
+    "Telefonda nRF Connect ile cihazı tara ve bağlan.",
+    "Sıcaklık özelliğinde bildirimleri aç."
+  ],
+  "testler": [
+    "Simülasyonda Bluetooth LE panelinde \"Telefonla bağlan\"a bas: 2 saniyede bir sıcaklık bildirimi geliyor.",
+    "DHT22 kaydırıcısını değiştir: bildirimdeki sıcaklık değişiyor.",
+    "LED özelliğine \"1\" yaz: LED yanıyor."
+  ],
+  "tanitim": {
+    "amac": "Az enerji harcayan Bluetooth LE ile telefona sıcaklık gönderen termometre. Akıllı bileklik ve sensörler de bu yolla çalışır.",
+    "nasil": [
+      "ESP32 \"KendinYap-Termometre\" adıyla BLE yayını yapar.",
+      "Sıcaklık özelliği (characteristic) okunabilir ve bildirim gönderir.",
+      "Telefon bağlanınca ESP32 2 saniyede bir sıcaklığı bildirir.",
+      "LED özelliğine telefondan \"1\" yazılırsa LED yanar, \"0\" yazılırsa söner."
+    ],
+    "ogrenilenler": [
+      "BLE servis ve özellik",
+      "Bildirim (notify)",
+      "Telefondan yazma"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Telefon BLE ile bağlandı.",
+        "eylem": {
+          "tur": "blebaglan"
+        }
+      },
+      {
+        "sure": 4500,
+        "yazi": "Sıcaklık 2 saniyede bir telefona bildirilir.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 30
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Telefondan \"1\" yazıldı: uyarı LED'i yanar.",
+        "eylem": {
+          "tur": "bleyaz",
+          "no": 1,
+          "veri": "1"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "\"0\" yazıldı: LED söner.",
+        "eylem": {
+          "tur": "bleyaz",
+          "no": 1,
+          "veri": "0"
+        }
+      }
+    ]
+  }
+}

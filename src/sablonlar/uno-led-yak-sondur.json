@@ -1,0 +1,99 @@
+{
+  "surum": 1,
+  "id": "uno-led-yak-sondur",
+  "baslik": "LED yak söndür (Uno)",
+  "ozet": "Arduino Uno bir LED'i saniyede bir yakıp söndürür. Simülasyonda çalışır.",
+  "zorluk": "Çok kolay",
+  "sure": "15 dakika",
+  "gereksinimler": [
+    "LED 1 saniye yanar, 1 saniye söner.",
+    "Seri ekranda \"Yandi\" ve \"Sondu\" yazar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı."
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "green",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-led-yak-sondur.ino",
+    "kutuphaneler": [],
+    "icerik": "// LED yak söndür: 9. pindeki LED saniyede bir yanıp söner.\nconst int LED_PIN = 9;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(LED_PIN, HIGH);\n  Serial.println(\"Yandi\");\n  delay(1000);\n  digitalWrite(LED_PIN, LOW);\n  Serial.println(\"Sondu\");\n  delay(1000);\n}\n"
+  },
+  "montaj": [
+    "LED'in uzun bacağını (A) ve kısa bacağını (C) ayrı sıralara tak.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Bağlantılar adımında ▶ Simülasyonu başlat: LED yanıp sönüyor.",
+    "Gerçek kartta da LED yanıp sönüyor."
+  ],
+  "tanitim": {
+    "amac": "Arduino Uno ile ilk proje: bir LED'i saniyede bir yakıp söndürmek. Kart, kablo ve kod doğru mu, bununla anlarsın.",
+    "nasil": [
+      "Uno, 9. pini 1 saniye HIGH (5 V) yapar: LED yanar.",
+      "Sonra 1 saniye LOW yapar: LED söner.",
+      "220 Ω direnç akımı sınırlar.",
+      "Döngü sonsuza kadar sürer."
+    ],
+    "ogrenilenler": [
+      "digitalWrite",
+      "delay",
+      "LED ve direnç"
+    ],
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "LED 1 saniye yanar, 1 saniye söner."
+      },
+      {
+        "sure": 3500,
+        "yazi": "Seri ekran \"Yandi\" ve \"Sondu\" yazar."
+      }
+    ]
+  }
+}

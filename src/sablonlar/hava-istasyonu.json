@@ -1,0 +1,152 @@
+{
+  "surum": 1,
+  "id": "hava-istasyonu",
+  "baslik": "Mini hava istasyonu",
+  "ozet": "Sıcaklık ve nemi ölçer, küçük OLED ekranda gösterir.",
+  "zorluk": "Kolay",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Sıcaklık (°C) ve nem (%) ekranda görünür.",
+    "Değerler 2 saniyede bir yenilenir.",
+    "Sensör okunamazsa ekranda uyarı çıkar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "left": 230,
+      "top": -110,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "left": 230,
+      "top": 150,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "dht:VCC",
+      "esp:3V3",
+      "red",
+      [],
+      "Breadboard'un + hattından da alabilirsin."
+    ],
+    [
+      "dht:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "dht:SDA",
+      "esp:D4",
+      "green",
+      [],
+      "Çıplak sensörse SDA ile VCC arasına 10 kΩ direnç koy."
+    ],
+    [
+      "oled:VIN",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "oled:DATA",
+      "esp:D21",
+      "blue",
+      [],
+      "Modülün üstünde SDA yazar."
+    ],
+    [
+      "oled:CLK",
+      "esp:D22",
+      "yellow",
+      [],
+      "Modülün üstünde SCL yazar."
+    ]
+  ],
+  "kod": {
+    "dosya": "hava-istasyonu.ino",
+    "kutuphaneler": [
+      "DHT sensor library (Adafruit)",
+      "Adafruit Unified Sensor",
+      "Adafruit SSD1306",
+      "Adafruit GFX Library"
+    ],
+    "icerik": "// Mini hava istasyonu: DHT22 ile ölç, OLED'de göster.\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n#include <DHT.h>\n\nconst int DHT_PIN = 4;\nconst int SDA_PIN = 21;\nconst int SCL_PIN = 22;\n\nDHT dht(DHT_PIN, DHT22);\nAdafruit_SSD1306 ekran(128, 64, &Wire, -1);\n\nvoid setup() {\n  Serial.begin(115200);\n  dht.begin();\n  Wire.begin(SDA_PIN, SCL_PIN);\n  if (!ekran.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {\n    Serial.println(\"OLED bulunamadi. Kablolari ve 0x3C adresini kontrol et.\");\n    while (true) delay(1000);\n  }\n  ekran.setTextColor(SSD1306_WHITE);\n}\n\nvoid loop() {\n  float sicaklik = dht.readTemperature();\n  float nem = dht.readHumidity();\n\n  ekran.clearDisplay();\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  ekran.println(\"Hava istasyonu\");\n\n  if (isnan(sicaklik) || isnan(nem)) {\n    ekran.println();\n    ekran.println(\"Sensor okunamadi.\");\n    Serial.println(\"DHT22 okunamadi.\");\n  } else {\n    ekran.setTextSize(2);\n    ekran.setCursor(0, 20);\n    ekran.print(sicaklik, 1);\n    ekran.println(\" C\");\n    ekran.setCursor(0, 44);\n    ekran.print(nem, 0);\n    ekran.println(\" %\");\n    Serial.printf(\"Sicaklik: %.1f C  Nem: %.0f %%\\n\", sicaklik, nem);\n  }\n  ekran.display();\n  delay(2000);\n}\n"
+  },
+  "montaj": [
+    "ESP32'yi breadboard'a tak.",
+    "ESP32'nin 3V3 pinini breadboard'un + hattına, GND pinini − hattına bağla. Sensör ve ekranı bu hatlardan besle.",
+    "DHT22 ve OLED'i tak; pin adlarını modülün üstünden oku.",
+    "Bağlantılar adımındaki kabloları sırayla tak."
+  ],
+  "testler": [
+    "Ekranda \"Hava istasyonu\" başlığı çıkıyor.",
+    "Sensörü avucunda tutunca sıcaklık birkaç derece artıyor.",
+    "Sensöre hohlayınca nem artıyor."
+  ],
+  "tanitim": {
+    "amac": "Odadaki sıcaklığı ve nemi küçük bir ekranda gösteren masa üstü hava istasyonu. Bitki odası, bebek odası ya da çalışma masası için kullanışlıdır.",
+    "nasil": [
+      "DHT22 sensörü sıcaklığı ve nemi ölçer, tek kabloyla (D4) ESP32'ye gönderir.",
+      "ESP32 değerleri 2 saniyede bir okur.",
+      "OLED ekran I2C ile (SDA D21, SCL D22) bağlıdır; ESP32 değerleri büyük yazıyla çizer.",
+      "Sensör okunamazsa ekranda uyarı çıkar."
+    ],
+    "ogrenilenler": [
+      "Dijital sensör okuma",
+      "I2C ekran",
+      "Kütüphane kullanma"
+    ],
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "Sensör ölçüyor; ekran sıcaklığı ve nemi gösterir."
+      },
+      {
+        "sure": 3500,
+        "yazi": "Hava ısındı: 31 °C. Ekran 2 saniye içinde güncellenir.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 31
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Nem %80'e çıktı.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:nem",
+          "deger": 80
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Serinledi: 18 °C.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 18
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "surum": 1,
+  "id": "led-yak-sondur",
+  "baslik": "LED yak söndür",
+  "ozet": "ESP32 bir LED'i saniyede bir yakıp söndürür. İlk proje için en iyisi.",
+  "zorluk": "Çok kolay",
+  "sure": "20 dakika",
+  "gereksinimler": [
+    "LED 1 saniye yanar, 1 saniye söner.",
+    "Seri monitörde \"Yandi\" ve \"Sondu\" yazıları görünür."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 170,
+      "top": 120,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 260,
+      "top": 40,
+      "attrs": {
+        "color": "red"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:D2",
+      "r1:1",
+      "green",
+      [],
+      "Direncin yönü önemli değil."
+    ],
+    [
+      "r1:2",
+      "led1:A",
+      "orange",
+      [],
+      "A: LED'in uzun bacağı (anot)."
+    ],
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [],
+      "C: LED'in kısa bacağı (katot)."
+    ]
+  ],
+  "kod": {
+    "dosya": "led-yak-sondur.ino",
+    "kutuphaneler": [],
+    "icerik": "// LED yak söndür: D2'deki LED saniyede bir yanıp söner.\n// Not: ESP32 DevKit'in üstündeki mavi LED de D2'ye bağlıdır; o da yanıp söner.\nconst int LED_PIN = 2;\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(LED_PIN, HIGH);\n  Serial.println(\"Yandi\");\n  delay(1000);\n  digitalWrite(LED_PIN, LOW);\n  Serial.println(\"Sondu\");\n  delay(1000);\n}\n"
+  },
+  "montaj": [
+    "ESP32'yi breadboard'un ortasındaki boşluğun iki yanına gelecek biçimde tak.",
+    "LED'i tak. Uzun bacağı (A) ile kısa bacağını (C) ayrı sıralara koy.",
+    "Bağlantılar adımındaki 3 kabloyu sırayla tak.",
+    "Kontrol adımında hata olmadığını gör, sonra USB'yi tak."
+  ],
+  "testler": [
+    "Kod yüklenince LED saniyede bir yanıp sönüyor.",
+    "Araçlar › Seri Port Ekranı (115200 baud) \"Yandi / Sondu\" yazıyor."
+  ],
+  "tanitim": {
+    "amac": "Elektroniğin \"merhaba dünya\"sı. Kartın bir pini kodla açılıp kapanınca LED yanıp söner. Her projede ilk denediğin şey budur: kart, kablo ve kod çalışıyor mu?",
+    "nasil": [
+      "ESP32, D2 pinini 1 saniye HIGH (3,3 V) yapar: LED yanar.",
+      "Sonra 1 saniye LOW (0 V) yapar: LED söner.",
+      "220 Ω direnç, LED'den geçen akımı sınırlar; LED ve pin yanmaz.",
+      "Bu döngü sonsuza kadar sürer."
+    ],
+    "ogrenilenler": [
+      "digitalWrite",
+      "delay",
+      "LED ve direnç",
+      "Seri ekran"
+    ],
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "Kod çalışıyor: LED 1 saniye yanar, 1 saniye söner."
+      },
+      {
+        "sure": 3500,
+        "yazi": "Seri ekran her değişimde \"Yandi\" ya da \"Sondu\" yazar."
+      }
+    ]
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "surum": 1,
+  "id": "uno-gece-lambasi",
+  "baslik": "Gece lambası (Uno)",
+  "ozet": "Ortam karardıkça LED parlar. Simülasyonda ışık kaydırıcısını oynat.",
+  "zorluk": "Kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Karanlıkta LED tam parlak yanar.",
+    "Aydınlıkta LED söner."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr",
+      "left": -200,
+      "top": 330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "ldr:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "ldr:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "ldr:AO",
+      "uno:A0",
+      "yellow",
+      [],
+      "AO: analog çıkış."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      []
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "green",
+      [],
+      "9. pin PWM verir; parlaklık ayarlanır."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-gece-lambasi.ino",
+    "kutuphaneler": [],
+    "icerik": "// Gece lambası: LDR karanlığı ölçer, LED o kadar parlak yanar.\nconst int ISIK_PIN = A0;   // LDR modülü AO (karanlıkta değer yükselir)\nconst int LED_PIN = 9;     // PWM pini\nconst int ESIK = 300;      // bunun altı \"aydınlık\": LED söner\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n  int karanlik = analogRead(ISIK_PIN);        // 0-1023\n  int parlaklik = 0;\n  if (karanlik > ESIK) parlaklik = map(karanlik, ESIK, 1023, 20, 255);\n  analogWrite(LED_PIN, parlaklik);\n  Serial.print(\"Karanlik: \");\n  Serial.print(karanlik);\n  Serial.print(\"  Parlaklik: \");\n  Serial.println(parlaklik);\n  delay(200);\n}\n"
+  },
+  "montaj": [
+    "LDR modülünü ışık alan bir yere koy.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Simülasyonda ışığı %10'a çek: LED parlak yanıyor.",
+    "Işığı %90'a çek: LED sönüyor."
+  ],
+  "tanitim": {
+    "amac": "Hava karardıkça kendiliğinden yanan gece lambası. Koridor, bebek odası ya da bahçe için.",
+    "nasil": [
+      "LDR (ışığa duyarlı direnç) modülü ortam ışığını ölçer.",
+      "Arduino karanlık değerini A0'dan okur.",
+      "Karanlık arttıkça 9. pinden (PWM) LED'i daha parlak yakar.",
+      "Aydınlıkta LED tamamen söner."
+    ],
+    "ogrenilenler": [
+      "Analog okuma",
+      "analogWrite (PWM)",
+      "Eşik değeri"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Gündüz (%90 ışık): LED sönük.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ldr",
+          "deger": 90
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Akşam oluyor (%45 ışık): LED hafif yanar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ldr",
+          "deger": 45
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Gece (%5 ışık): LED tam parlak.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "ldr",
+          "deger": 5
+        }
+      }
+    ]
+  }
+}

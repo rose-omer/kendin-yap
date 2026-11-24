@@ -1,0 +1,150 @@
+{
+  "surum": 1,
+  "id": "uno-hareket-alarmi",
+  "baslik": "Hareket alarmı (Uno)",
+  "ozet": "PIR sensörü hareket görünce buzzer öter ve LED yanar. Simülasyonda \"Hareket et\" düğmesiyle dene.",
+  "zorluk": "Kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Hareket olunca buzzer 3 kez öter ve LED yanar.",
+    "Hareket yokken sessizdir."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir",
+      "left": 20,
+      "top": -20,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 300,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 150,
+      "top": 20,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 142,
+      "top": 100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "pir:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pir:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "bz1:1",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pir:OUT",
+      "uno:2",
+      "yellow",
+      []
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      []
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "green",
+      []
+    ],
+    [
+      "bz1:2",
+      "uno:7",
+      "blue",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ]
+  ],
+  "kod": {
+    "dosya": "uno-hareket-alarmi.ino",
+    "kutuphaneler": [],
+    "icerik": "// Hareket alarmı: PIR hareket görünce buzzer öter, LED yanar.\nconst int PIR_PIN = 2;\nconst int LED_PIN = 9;\nconst int BUZZER_PIN = 7;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(PIR_PIN, INPUT);\n  pinMode(LED_PIN, OUTPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  Serial.println(\"Hazir. Gercek PIR icin 30 saniye isinma gerekir.\");\n}\n\nvoid loop() {\n  if (digitalRead(PIR_PIN) == HIGH) {\n    Serial.println(\"Hareket var!\");\n    digitalWrite(LED_PIN, HIGH);\n    for (int i = 0; i < 3; i++) {\n      tone(BUZZER_PIN, 2000, 150);\n      delay(300);\n    }\n  } else {\n    digitalWrite(LED_PIN, LOW);\n  }\n  delay(100);\n}\n"
+  },
+  "montaj": [
+    "PIR'ın ayar vidalarını ortada bırak.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Simülasyonda \"Hareket et\" düğmesine bas: buzzer öter, LED yanar.",
+    "Gerçek kartta elini PIR'ın önünde salla."
+  ],
+  "tanitim": {
+    "amac": "Hareket algılayınca öten ve ışık yakan alarm. Giriş kapısı ya da dolap için.",
+    "nasil": [
+      "PIR sensörü hareketi algılayınca OUT pini HIGH olur.",
+      "Arduino bunu 2. pinden okur.",
+      "LED yanar, buzzer 3 kez öter.",
+      "Hareket bitince LED söner."
+    ],
+    "ogrenilenler": [
+      "Dijital giriş",
+      "PIR sensörü",
+      "tone"
+    ],
+    "demo": [
+      {
+        "sure": 2500,
+        "yazi": "Hareket yok: alarm bekliyor."
+      },
+      {
+        "sure": 3500,
+        "yazi": "Biri geçti: LED yanar, buzzer 3 kez öter.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "pir"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Hareket bitti: LED söner."
+      }
+    ]
+  }
+}

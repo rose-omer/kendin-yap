@@ -1,0 +1,117 @@
+{
+  "surum": 1,
+  "id": "hareket-alarmi",
+  "baslik": "Hareket alarmı",
+  "ozet": "PIR sensörü bir hareket algılayınca buzzer öter.",
+  "zorluk": "Kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Önünden geçince buzzer 5 kez öter.",
+    "Hareket yokken sessiz kalır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 300,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir",
+      "left": 40,
+      "top": -10,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 70,
+      "top": 160,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "pir:VCC",
+      "esp:VIN",
+      "red",
+      [],
+      "PIR 5 V ister. VIN, USB takılıyken 5 V verir."
+    ],
+    [
+      "pir:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pir:OUT",
+      "esp:D27",
+      "yellow",
+      [],
+      "PIR çıkışı 3,3 V'tur; ESP32 için güvenli."
+    ],
+    [
+      "bz1:2",
+      "esp:D25",
+      "green",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ],
+    [
+      "bz1:1",
+      "esp:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "hareket-alarmi.ino",
+    "kutuphaneler": [],
+    "icerik": "// Hareket alarmı: PIR hareket görünce buzzer 5 kez öter.\nconst int PIR_PIN = 27;\nconst int BUZZER_PIN = 25;\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(PIR_PIN, INPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  Serial.println(\"PIR isiniyor. 30 saniye bekle...\");\n  delay(30000);\n  Serial.println(\"Hazir.\");\n}\n\nvoid loop() {\n  if (digitalRead(PIR_PIN) == HIGH) {\n    Serial.println(\"Hareket var!\");\n    for (int i = 0; i < 5; i++) {\n      tone(BUZZER_PIN, 2000, 150);\n      delay(300);\n    }\n    delay(2000);\n  }\n  delay(100);\n}\n"
+  },
+  "montaj": [
+    "PIR'ın üstündeki iki ayar vidasını ortada bırak.",
+    "Kabloları sırayla tak.",
+    "Kodu yükledikten sonra sensörün 30 saniye ısınmasını bekle."
+  ],
+  "testler": [
+    "Seri Port Ekranı 30 saniye sonra \"Hazir\" yazıyor.",
+    "Elini sensörün önünde salladığında buzzer 5 kez ötüyor.",
+    "Hareketsiz beklerken buzzer ötmüyor."
+  ],
+  "tanitim": {
+    "amac": "Odaya biri girince öten basit bir alarm. Kapı girişi, dolap ya da \"kardeşim odama girmesin\" projesi.",
+    "nasil": [
+      "PIR sensörü insan vücudunun yaydığı ısının hareketini algılar.",
+      "Hareket görünce OUT pini 3,3 V olur; ESP32 bunu D27'den okur.",
+      "ESP32 buzzer'ı 5 kez öttürür.",
+      "Gerçek PIR sensörü ilk 30 saniye ısınır; kod bu süreyi bekler."
+    ],
+    "ogrenilenler": [
+      "Dijital giriş",
+      "PIR sensörü",
+      "tone ile alarm sesi"
+    ],
+    "demo": [
+      {
+        "sure": 31000,
+        "yazi": "PIR sensörü 30 saniye ısınıyor (gerçek sensör de böyle bekler)."
+      },
+      {
+        "sure": 4000,
+        "yazi": "Biri odaya girdi: buzzer 5 kez öter.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "pir"
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Hareket yok: alarm sessiz."
+      }
+    ]
+  }
+}

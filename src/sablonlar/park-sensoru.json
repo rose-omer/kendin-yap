@@ -1,0 +1,143 @@
+{
+  "surum": 1,
+  "id": "park-sensoru",
+  "baslik": "Park sensörü",
+  "ozet": "Engel yaklaştıkça buzzer daha sık öter; çok yakında sürekli öter.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "50 cm'den uzakta ses yok.",
+    "50 cm'den yakında kesik kesik ses var; yaklaştıkça sıklaşır.",
+    "10 cm'den yakında sürekli ses var."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 160,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "sr04",
+      "left": 120,
+      "top": -40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 330,
+      "top": 30,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "sr04:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "sr04:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr04:TRIG",
+      "uno:9",
+      "orange",
+      []
+    ],
+    [
+      "sr04:ECHO",
+      "uno:10",
+      "yellow",
+      [],
+      "Uno 5 V çalıştığı için gerilim bölücü gerekmez."
+    ],
+    [
+      "bz1:2",
+      "uno:8",
+      "green",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ],
+    [
+      "bz1:1",
+      "uno:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "kod": {
+    "dosya": "park-sensoru.ino",
+    "kutuphaneler": [],
+    "icerik": "// Park sensörü: HC-SR04 mesafeyi ölçer, buzzer yakınlığa göre öter.\nconst int TRIG_PIN = 9;\nconst int ECHO_PIN = 10;\nconst int BUZZER_PIN = 8;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(TRIG_PIN, OUTPUT);\n  pinMode(ECHO_PIN, INPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n}\n\n// Mesafeyi cm olarak döndürür; ölçüm yoksa -1.\nlong mesafeOlc() {\n  digitalWrite(TRIG_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG_PIN, LOW);\n  long sure = pulseIn(ECHO_PIN, HIGH, 30000);\n  if (sure == 0) return -1;\n  return sure / 58;\n}\n\nvoid loop() {\n  long cm = mesafeOlc();\n  Serial.print(\"Mesafe: \");\n  Serial.print(cm);\n  Serial.println(\" cm\");\n\n  if (cm > 0 && cm < 10) {\n    tone(BUZZER_PIN, 1000);\n    delay(100);\n  } else if (cm > 0 && cm < 50) {\n    noTone(BUZZER_PIN);\n    tone(BUZZER_PIN, 1000, 80);\n    delay(80 + cm * 8);\n  } else {\n    noTone(BUZZER_PIN);\n    delay(200);\n  }\n}\n"
+  },
+  "montaj": [
+    "HC-SR04'ü breadboard'a, \"gözleri\" öne bakacak biçimde tak.",
+    "Buzzer'ın uzun bacağını (+) bir sıraya, kısa bacağını başka sıraya koy.",
+    "Kabloları sırayla tak."
+  ],
+  "testler": [
+    "Seri Port Ekranı (9600) mesafeyi cm olarak yazıyor.",
+    "Elini 30 cm'ye getirince buzzer kesik kesik ötüyor.",
+    "Elini 5 cm'ye getirince buzzer sürekli ötüyor."
+  ],
+  "tanitim": {
+    "amac": "Arabalardaki park sensörünün küçük hâli. Engel yaklaştıkça bip sesleri sıklaşır, çok yakında sürekli öter. Garaj duvarı, robot ya da kapı uyarısı için kullanılır.",
+    "nasil": [
+      "HC-SR04 bir ses dalgası gönderir (TRIG) ve yankısını dinler (ECHO).",
+      "Arduino yankının dönüş süresinden mesafeyi santimetre olarak hesaplar.",
+      "50 cm'den yakında buzzer kesik kesik öter; aralık mesafeyle kısalır.",
+      "10 cm'den yakında buzzer sürekli öter."
+    ],
+    "ogrenilenler": [
+      "Ultrasonik mesafe ölçme",
+      "pulseIn",
+      "tone ile ses"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Engel uzakta (150 cm): ses yok.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 150
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Engel yaklaştı (40 cm): kesik kesik bip.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 40
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Daha yakın (15 cm): bip sıklaşır.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 15
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Çok yakın (5 cm): sürekli ses.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "sr04",
+          "deger": 5
+        }
+      }
+    ]
+  }
+}

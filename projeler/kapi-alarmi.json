@@ -1,0 +1,175 @@
+{
+  "surum": 1,
+  "id": "kapi-alarmi",
+  "baslik": "Kapı alarmı",
+  "ozet": "Kapı açılınca buzzer öter ve kırmızı LED yanar. Kapıdaki manyetik sensör (reed switch) kapıyı algılar.",
+  "zorluk": "Kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "Kapı açılınca kırmızı LED yanar.",
+    "Kapı açık kaldıkça buzzer kesik kesik öter.",
+    "Kapı kapanınca LED söner ve buzzer susar.",
+    "Kapı kapalıyken devre sessiz kalır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 300,
+      "top": 40,
+      "attrs": {}
+    },
+    {
+      "type": "ky-modul",
+      "id": "reed",
+      "left": 120,
+      "top": -50,
+      "attrs": {
+        "baslik": "Manyetik kapı sensörü (reed switch)",
+        "sag": "KABLO1,KABLO2",
+        "renk": "#64748b",
+        "arama": "MC-38 manyetik kapı sensörü",
+        "ozet": "İki parça: sensör kasaya, mıknatıs kapıya. Mıknatıs yakınken kontak kapalıdır. İki kablosunun yönü yoktur."
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 200,
+      "top": 95,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 120,
+      "top": 80,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 140,
+      "top": 180,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "reed:KABLO2",
+      "esp:GND.2",
+      "black",
+      [],
+      "Sensörün kablolarından biri. Hangisi olduğu fark etmez."
+    ],
+    [
+      "led1:C",
+      "esp:GND.2",
+      "black",
+      [],
+      "LED'in kısa bacağı (katot)."
+    ],
+    [
+      "bz1:1",
+      "esp:GND.2",
+      "black",
+      [],
+      "Buzzer'ın - (kısa) bacağı."
+    ],
+    [
+      "reed:KABLO1",
+      "esp:D27",
+      "yellow",
+      [],
+      "Sensörün öbür kablosu. Kodda iç pull-up açık; ayrı direnç gerekmez."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "orange",
+      [],
+      "LED'in uzun bacağı (anot) dirence gider."
+    ],
+    [
+      "r1:2",
+      "esp:D26",
+      "orange",
+      [],
+      "220 Ω direncin öbür ucu."
+    ],
+    [
+      "bz1:2",
+      "esp:D25",
+      "green",
+      [],
+      "Buzzer'ın + (uzun) bacağı."
+    ]
+  ],
+  "kod": {
+    "dosya": "kapi-alarmi.ino",
+    "kutuphaneler": [],
+    "icerik": "// Kapi alarmi: kapi acilinca buzzer oter ve kirmizi LED yanar.\n// Manyetik kapi sensoru (reed switch) D27 ile GND arasinda.\n\n// --- Pinler (baglantilarla ayni) ---\nconst int REED_PIN = 27;    // D27: kapi sensoru\nconst int LED_PIN = 26;     // D26: kirmizi LED (220 ohm direncle)\nconst int BUZZER_PIN = 25;  // D25: buzzer +\n\n// --- Ayarlar ---\n// Cogu kapi sensorunde (MC-38) miknatis yakinken kontak kapalidir.\n// Kapi kapali -> pin LOW, kapi acik -> pin HIGH.\n// Sensorun ters calisiyorsa (NC tipi) bunu LOW yap.\nconst int KAPI_ACIK_SEVIYE = HIGH;\nconst int BIP_FREKANS = 2000;      // Hz. Buzzer sesinin inceligi.\nconst unsigned long BIP_SURE = 200;    // ms. Bir bip ne kadar surer.\nconst unsigned long BIP_ARA = 300;     // ms. Iki bip arasi sessizlik.\nconst unsigned long KARARLILIK = 50;   // ms. Kontak titresimini yok sayma suresi.\n\n// --- Durum ---\nbool kapiAcik = false;\nint sonOkuma = -1;\nunsigned long sonDegisim = 0;\nunsigned long sonBip = 0;\n\nvoid setup() {\n  Serial.begin(115200);\n  // Ic pull-up: kontak acikken pin HIGH, kapaliyken GND'ye cekilir.\n  pinMode(REED_PIN, INPUT_PULLUP);\n  pinMode(LED_PIN, OUTPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  digitalWrite(LED_PIN, LOW);\n  noTone(BUZZER_PIN);\n  Serial.println(\"Kapi alarmi hazir.\");\n}\n\nvoid loop() {\n  unsigned long simdi = millis();\n  int okuma = digitalRead(REED_PIN);\n\n  // Okuma degisince sayaci sifirla; KARARLILIK suresi boyunca ayni kalirsa kabul et.\n  if (okuma != sonOkuma) {\n    sonOkuma = okuma;\n    sonDegisim = simdi;\n  }\n  bool yeniDurum = (sonOkuma == KAPI_ACIK_SEVIYE);\n  if (simdi - sonDegisim >= KARARLILIK && yeniDurum != kapiAcik) {\n    kapiAcik = yeniDurum;\n    if (kapiAcik) {\n      Serial.println(\"Kapi ACILDI\");\n      digitalWrite(LED_PIN, HIGH);\n      sonBip = simdi - (BIP_SURE + BIP_ARA);  // ilk bip hemen calsin\n    } else {\n      Serial.println(\"Kapi kapandi\");\n      digitalWrite(LED_PIN, LOW);\n      noTone(BUZZER_PIN);\n    }\n  }\n\n  // Kapi acik kaldikca kesik kesik bip.\n  if (kapiAcik && simdi - sonBip >= BIP_SURE + BIP_ARA) {\n    tone(BUZZER_PIN, BIP_FREKANS, BIP_SURE);\n    sonBip = simdi;\n  }\n}\n"
+  },
+  "montaj": [
+    "Sensörün kablolu parçasını kapı kasasına, mıknatıslı parçasını kapıya vida ya da çift taraflı bantla tak.",
+    "Kapı kapalıyken iki parça yan yana gelsin; aralarında en çok 1 cm boşluk kalsın. İki parçadaki çizgiler hizalı olsun.",
+    "Sensör kablosu kısaysa iki damarlı bir kabloyla uzat; birleşimleri lehimle ya da klemensle yap, bantla yalıt.",
+    "Kabloları bağlantı sırasıyla tak: önce GND kabloları, sonra sinyal kabloları.",
+    "LED'in uzun bacağının dirence, kısa bacağının GND'ye gittiğine bak.",
+    "Kodu Arduino IDE'den karta yükle. Seri Port Ekranı'nı 115200 baud ile aç."
+  ],
+  "testler": [
+    "Kart açılınca Seri Port Ekranı \"Kapi alarmi hazir.\" yazıyor.",
+    "Kapı kapalıyken LED sönük, buzzer sessiz.",
+    "Kapıyı açınca LED yanıyor, buzzer kesik kesik ötüyor, ekranda \"Kapi ACILDI\" yazıyor.",
+    "Kapıyı kapatınca LED sönüyor, buzzer susuyor, ekranda \"Kapi kapandi\" yazıyor.",
+    "Kapıyı yavaşça aç-kapat; her harekette yalnız bir satır yazıyor (titreşim yok)."
+  ],
+  "tanitim": {
+    "amac": "Kapı açılınca öten ve ışık yakan alarm. Mıknatıslı kapı sensörü kapıya, mıknatısı kasaya yapışır.",
+    "nasil": [
+      "Kapı kapalıyken mıknatıs sensörün yanındadır; iki kablo birbirine değer.",
+      "Kapı açılınca mıknatıs uzaklaşır; devre açılır, ESP32 pini HIGH okur.",
+      "ESP32 LED'i yakar ve buzzer'ı kesik kesik öttürür.",
+      "Kapı kapanınca alarm durur."
+    ],
+    "ogrenilenler": [
+      "Manyetik anahtar (reed)",
+      "INPUT_PULLUP",
+      "Alarm mantığı"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Kapı kapalı: alarm sessiz.",
+        "eylem": {
+          "tur": "anahtar",
+          "anahtar": "reed",
+          "deger": 0
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Kapı açıldı: LED yanar, buzzer öter.",
+        "eylem": {
+          "tur": "anahtar",
+          "anahtar": "reed",
+          "deger": 1
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "Kapı kapandı: alarm durur.",
+        "eylem": {
+          "tur": "anahtar",
+          "anahtar": "reed",
+          "deger": 0
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "embedded-engineering-skills": {
+      "source": { "source": "github", "repo": "wedsamuel1230/embedded-engineering-skills" }
+    }
+  },
+  "enabledPlugins": {
+    "embedded-engineering-skills@embedded-engineering-skills": true
+  }
+}
