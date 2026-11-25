@@ -1,0 +1,102 @@
+{
+  "surum": 1,
+  "id": "esp32-ask-mesaji",
+  "baslik": "Aşk mesajı ekranı (hediye)",
+  "ozet": "ESP32 saati internetten alır; OLED'de kalp, tatlı mesajlar ve \"kaç gündür birlikteyiz\" sayacı döner.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "ESP32 Wi-Fi'ye bağlanır ve tarihi internetten (NTP) alır.",
+    "OLED'de atan bir kalp çizilir.",
+    "Sırayla tatlı mesajlar ve başlangıç gününden bu yana geçen gün sayısı gösterilir."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 60,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "left": 280,
+      "top": 0,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      [],
+      "OLED GND."
+    ],
+    [
+      "oled:VIN",
+      "esp:3V3",
+      "red",
+      [],
+      "OLED 3,3 V."
+    ],
+    [
+      "oled:DATA",
+      "esp:D21",
+      "blue",
+      [],
+      "SDA = D21."
+    ],
+    [
+      "oled:CLK",
+      "esp:D22",
+      "green",
+      [],
+      "SCL = D22."
+    ]
+  ],
+  "montaj": [
+    "OLED'in dört kablosunu tak: GND, VIN 3,3 V, DATA = D21, CLK = D22.",
+    "Koddaki AG_ADI ve PAROLA'ya kendi Wi-Fi bilgilerini yaz.",
+    "BASLANGIC satırına birlikte olduğunuz tarihi yaz (yıl, ay, gün).",
+    "MESAJLAR dizisine kendi sözlerini ekle."
+  ],
+  "testler": [
+    "OLED'de kalp çiziliyor ve hafifçe atıyor.",
+    "Alt yazı birkaç saniyede bir değişiyor: mesajlar ve gün sayısı.",
+    "Gün sayısı bugünün tarihine göre doğru (internet saatinden)."
+  ],
+  "tanitim": {
+    "amac": "Sevgiline masaüstü hediyesi: internet saatiyle \"kaç gündür birlikteyiz\" sayan, kalp çizen ve tatlı mesajlar gösteren ekran.",
+    "nasil": [
+      "ESP32 açılışta Wi-Fi'ye bağlanır, tarihi NTP ile alır.",
+      "OLED'de iki daire ve bir üçgenle kalp çizilir; boyutu değişerek atar.",
+      "Alt satırda mesajlar ve başlangıç tarihinden bu yana geçen gün sayısı sırayla döner."
+    ],
+    "ogrenilenler": [
+      "Wi-Fi ve NTP saati",
+      "OLED'e şekil çizme",
+      "Tarih farkıyla gün sayma",
+      "Ekranda sırayla içerik"
+    ],
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "ESP32 Wi-Fi'ye bağlanıp saati internetten alıyor."
+      },
+      {
+        "sure": 4000,
+        "yazi": "OLED'de kalp atıyor; \"Seni seviyorum\" yazısı görünüyor."
+      },
+      {
+        "sure": 4000,
+        "yazi": "Ekran değişiyor: kaç gündür birlikte olduğunuzu sayıyor."
+      }
+    ]
+  },
+  "kod": {
+    "dil": "arduino",
+    "icerik": "// Aşk mesajı ekranı: ESP32 saati NTP ile alır; OLED'de atan kalp,\n// tatlı mesajlar ve \"kaç gündür birlikteyiz\" sayacı sırayla gösterilir.\n#include <WiFi.h>\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n#include <time.h>\n\nconst char* AG_ADI = \"EvimWiFi\";    // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";   // kendi Wi-Fi parolan\nconst long SAAT_DILIMI = 3 * 3600;  // Türkiye UTC+3\n\n// Birlikte olduğunuz ilk gün (yıl, ay, gün):\nconst int BASLANGIC_YIL = 2024;\nconst int BASLANGIC_AY = 2;\nconst int BASLANGIC_GUN = 14;\n\n// OLED yazı tipinde Türkçe harf yok; mesajları ASCII yaz.\nconst char* MESAJLAR[] = {\"Seni seviyorum\", \"Iyi ki varsin\", \"Kalbim senin\"};\nconst int MESAJ_SAYISI = 3;\n\nAdafruit_SSD1306 ekran(128, 64, &Wire, -1);\nint ekranNo = 0;\nunsigned long sonDegisim = 0;\nunsigned long sonAtis = 0;\nint kalpBoyut = 0;\n\nvoid kalpCiz(int cx, int cy, int boyut) {\n  int r = boyut;\n  ekran.fillCircle(cx - r / 2, cy, r / 2 + 1, SSD1306_WHITE);\n  ekran.fillCircle(cx + r / 2, cy, r / 2 + 1, SSD1306_WHITE);\n  // Alt uç: daralan yatay çizgilerle dolu üçgen.\n  for (int i = 0; i <= r; i++) {\n    int yari = r - i;\n    ekran.drawFastHLine(cx - yari, cy + i, yari * 2 + 1, SSD1306_WHITE);\n  }\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  Wire.begin(21, 22);\n  if (!ekran.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {\n    Serial.println(\"OLED bulunamadi (0x3C).\");\n    while (true) delay(1000);\n  }\n  ekran.setTextColor(SSD1306_WHITE);\n  ekran.clearDisplay();\n  ekran.setCursor(0, 0);\n  ekran.println(\"Wi-Fi...\");\n  ekran.display();\n\n  WiFi.mode(WIFI_STA);\n  WiFi.begin(AG_ADI, PAROLA);\n  unsigned long bas = millis();\n  while (WiFi.status() != WL_CONNECTED && millis() - bas < 15000) {\n    delay(300);\n    Serial.print(\".\");\n  }\n  Serial.println();\n  configTime(SAAT_DILIMI, 0, \"pool.ntp.org\");\n  Serial.println(WiFi.status() == WL_CONNECTED ? \"Baglandi.\" : \"Wi-Fi yok.\");\n}\n\nlong gunSayisi() {\n  time_t simdi;\n  time(&simdi);\n  if (simdi < 100000) return -1;  // saat daha gelmedi\n  struct tm bas = {};\n  bas.tm_year = BASLANGIC_YIL - 1900;\n  bas.tm_mon = BASLANGIC_AY - 1;\n  bas.tm_mday = BASLANGIC_GUN;\n  time_t t0 = mktime(&bas);\n  return (simdi - t0) / 86400L;\n}\n\nvoid loop() {\n  // Kalbin atışı: boyut birkaç yüz ms'de bir değişir.\n  if (millis() - sonAtis > 120) {\n    sonAtis = millis();\n    kalpBoyut = 12 + 3 * (sin(millis() / 300.0) + 1);\n  }\n  if (millis() - sonDegisim > 3500) {\n    sonDegisim = millis();\n    ekranNo = (ekranNo + 1) % (MESAJ_SAYISI + 1);\n    if (ekranNo == MESAJ_SAYISI) {\n      long g = gunSayisi();\n      if (g >= 0) { Serial.print(g); Serial.println(\" gun birlikte\"); }\n    }\n  }\n\n  ekran.clearDisplay();\n  kalpCiz(64, 20, kalpBoyut);\n\n  ekran.setTextSize(1);\n  if (ekranNo < MESAJ_SAYISI) {\n    int gen = strlen(MESAJLAR[ekranNo]) * 6;\n    ekran.setCursor((128 - gen) / 2, 52);\n    ekran.print(MESAJLAR[ekranNo]);\n  } else {\n    long g = gunSayisi();\n    ekran.setCursor(10, 48);\n    if (g < 0) {\n      ekran.print(\"Saat bekleniyor\");\n    } else {\n      ekran.print(g);\n      ekran.print(\" gun birlikte\");\n    }\n  }\n  ekran.display();\n  delay(30);\n}"
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "surum": 1,
+  "id": "uno-muzik-kutusu",
+  "baslik": "Müzik kutusu (hediye)",
+  "ozet": "Kapağı açınca servo kapağı kaldırır, melodi çalar, ışık yanar. Takı ya da küçük hediye kutusu için.",
+  "zorluk": "Orta",
+  "sure": "1 saat",
+  "gereksinimler": [
+    "Düğmeye basınca kutu \"açılır\": servo 90°'ye döner.",
+    "Açıkken melodi (Sevinç Şarkısı, telifsiz) çalar ve LED yanar.",
+    "Tekrar basınca kapanır: servo 0°, ses ve ışık durur."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 120,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn",
+      "left": 280,
+      "top": 0,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "left": 300,
+      "top": 130,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 300,
+      "top": 260,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "left": 500,
+      "top": 120,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 440,
+      "top": 170,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "btn:1.r",
+      "uno:2",
+      "blue",
+      [],
+      "Kapak düğmesi D2'ye."
+    ],
+    [
+      "btn:2.r",
+      "uno:GND.1",
+      "black",
+      [],
+      "Düğmenin öbür ucu GND."
+    ],
+    [
+      "servo1:V+",
+      "uno:5V",
+      "red",
+      [],
+      "Servo 5 V."
+    ],
+    [
+      "servo1:GND",
+      "uno:GND.2",
+      "black",
+      [],
+      "Servo GND."
+    ],
+    [
+      "servo1:PWM",
+      "uno:9",
+      "orange",
+      [],
+      "Servo sinyali D9."
+    ],
+    [
+      "bz1:2",
+      "uno:8",
+      "purple",
+      [],
+      "Buzzer sinyali D8."
+    ],
+    [
+      "bz1:1",
+      "uno:GND.3",
+      "black",
+      [],
+      "Buzzer GND."
+    ],
+    [
+      "led1:A",
+      "r1:1",
+      "yellow",
+      [],
+      "LED artı ucu dirence."
+    ],
+    [
+      "r1:2",
+      "uno:11",
+      "green",
+      [],
+      "220 Ω direnç D11'e."
+    ],
+    [
+      "led1:C",
+      "uno:GND.1",
+      "black",
+      [],
+      "LED eksi ucu GND."
+    ]
+  ],
+  "montaj": [
+    "Servoyu kapağa tutturacak şekilde yerleştir; V+ 5 V, GND, sinyal D9.",
+    "Kapak düğmesini D2 ile GND arasına bağla (gerçekte kapağa reed/mikro anahtar da koyabilirsin).",
+    "Buzzer'ı D8 ile GND arasına, LED'i 220 Ω direnç üzerinden D11'e bağla.",
+    "Servo titriyorsa ayrı 5 V kaynaktan besle, GND'leri birleştir."
+  ],
+  "testler": [
+    "Düğmeye bas: servo 90°'ye döner, melodi başlar, LED yanar.",
+    "Tekrar bas: servo 0°'ye döner, ses ve ışık durur."
+  ],
+  "tanitim": {
+    "amac": "Kapağı açınca melodi çalan, ışık yanan ve servoyla kapağı kaldıran küçük müzik kutusu.",
+    "nasil": [
+      "Düğme kutunun kapağıdır; her basış açıp kapatır.",
+      "Açıkken servo kapağı kaldırır, buzzer melodiyi nota nota çalar, LED yanar.",
+      "Melodi telifsiz \"Sevinç Şarkısı\"; notaları koddan değiştirebilirsin."
+    ],
+    "ogrenilenler": [
+      "Servo kontrol",
+      "tone ile melodi",
+      "Durum (açık/kapalı) tutma",
+      "Zamanlayıcıyla nota sırası"
+    ],
+    "demo": [
+      {
+        "sure": 2000,
+        "yazi": "Kutu kapalı: servo 0°, sessiz."
+      },
+      {
+        "sure": 300,
+        "yazi": "Düğmeye basıldı.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn"
+        }
+      },
+      {
+        "sure": 5000,
+        "yazi": "Kutu açıldı: servo kalktı, melodi çalıyor, LED yanıyor.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn"
+        }
+      },
+      {
+        "sure": 300,
+        "yazi": "Tekrar basıldı.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn"
+        }
+      },
+      {
+        "sure": 2000,
+        "yazi": "Kutu kapandı.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn"
+        }
+      }
+    ]
+  },
+  "kod": {
+    "dil": "arduino",
+    "icerik": "// Müzik kutusu: düğme kutuyu açıp kapatır. Açıkken servo kapağı kaldırır,\n// melodi çalar, LED yanar. Melodi: Beethoven \"Sevinç Şarkısı\" (telifsiz).\n#include <Servo.h>\n\nconst int KAPAK_PIN = 2;\nconst int SERVO_PIN = 9;\nconst int BUZZER_PIN = 8;\nconst int LED_PIN = 11;\nconst int KAPALI_ACI = 0;\nconst int ACIK_ACI = 90;\n\nServo kapak;\nbool acik = false;\nint sonButon = HIGH;\n\n// Nota frekansları ve süreleri (1 = onaltılık). 0 = es.\nconst int MELODI[] = {330, 330, 349, 392, 392, 349, 330, 294, 262, 262, 294, 330, 330, 294, 294};\nconst int SURE[]   = {4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   6,   2};\nconst int NOTA_SAYISI = sizeof(MELODI) / sizeof(MELODI[0]);\nconst int TEMPO = 150;  // ms; bir onaltılık nota\n\nint nota = 0;\nunsigned long notaBaslangic = 0;\nint notaSuresi = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(KAPAK_PIN, INPUT_PULLUP);\n  pinMode(LED_PIN, OUTPUT);\n  kapak.attach(SERVO_PIN);\n  kapak.write(KAPALI_ACI);\n  delay(50);\n  sonButon = digitalRead(KAPAK_PIN);  // açılış durumunu al; sahte ilk basışı önler\n  Serial.println(\"Muzik kutusu hazir. Dugmeye bas.\");\n}\n\nvoid loop() {\n  int b = digitalRead(KAPAK_PIN);\n  if (b == LOW && sonButon == HIGH) {\n    acik = !acik;\n    kapak.write(acik ? ACIK_ACI : KAPALI_ACI);\n    digitalWrite(LED_PIN, acik);\n    if (!acik) noTone(BUZZER_PIN);\n    nota = 0;\n    notaBaslangic = 0;\n    notaSuresi = 0;\n    Serial.println(acik ? \"Kutu acildi\" : \"Kutu kapandi\");\n    delay(40);\n  }\n  sonButon = b;\n\n  if (acik && millis() - notaBaslangic >= (unsigned long)notaSuresi) {\n    if (MELODI[nota] > 0) tone(BUZZER_PIN, MELODI[nota], SURE[nota] * TEMPO);\n    notaSuresi = SURE[nota] * TEMPO + 40;\n    notaBaslangic = millis();\n    nota = (nota + 1) % NOTA_SAYISI;  // bitince baştan\n  }\n  delay(5);\n}"
+  }
+}

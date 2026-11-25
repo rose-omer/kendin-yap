@@ -1,0 +1,244 @@
+{
+  "surum": 1,
+  "id": "uno-ask-olceri",
+  "baslik": "Aşk ölçeri (hediye/oyun)",
+  "ozet": "İki metal pada aynı anda dokununca \"aşk ısısı\" yükselir: RGB mavi→yeşil→kırmızı olur, buzzer tizleşir. Parti oyunu.",
+  "zorluk": "Orta",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "İki pada (iki düğme) aynı anda basılınca seviye yükselir.",
+    "RGB LED mavi (soğuk) → yeşil → kırmızı (ateşli) geçer.",
+    "Buzzer sesi seviyeyle tizleşir; en üstte kısa zafer ezgisi çalar.",
+    "Bırakınca seviye yavaşça düşer."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 150,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "pad1",
+      "left": 280,
+      "top": 0,
+      "attrs": {
+        "color": "blue"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "pad2",
+      "left": 280,
+      "top": 140,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "rgb",
+      "left": 500,
+      "top": 40,
+      "attrs": {
+        "common": "cathode"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "left": 430,
+      "top": 60,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "left": 430,
+      "top": 110,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "left": 430,
+      "top": 160,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "left": 300,
+      "top": 290,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "pad1:1.r",
+      "uno:2",
+      "blue",
+      [],
+      "1. pad D2'ye."
+    ],
+    [
+      "pad1:2.r",
+      "uno:GND.1",
+      "black",
+      [],
+      ""
+    ],
+    [
+      "pad2:1.r",
+      "uno:3",
+      "blue",
+      [],
+      "2. pad D3'e."
+    ],
+    [
+      "pad2:2.r",
+      "uno:GND.2",
+      "black",
+      [],
+      ""
+    ],
+    [
+      "rgb:COM",
+      "uno:GND.3",
+      "black",
+      [],
+      "Ortak katot GND'ye."
+    ],
+    [
+      "rgb:R",
+      "r1:1",
+      "red",
+      [],
+      "Kırmızı uç dirence."
+    ],
+    [
+      "r1:2",
+      "uno:9",
+      "green",
+      [],
+      "D9 (PWM)."
+    ],
+    [
+      "rgb:G",
+      "r2:1",
+      "green",
+      [],
+      "Yeşil uç dirence."
+    ],
+    [
+      "r2:2",
+      "uno:10",
+      "green",
+      [],
+      "D10 (PWM)."
+    ],
+    [
+      "rgb:B",
+      "r3:1",
+      "blue",
+      [],
+      "Mavi uç dirence."
+    ],
+    [
+      "r3:2",
+      "uno:11",
+      "green",
+      [],
+      "D11 (PWM)."
+    ],
+    [
+      "bz1:2",
+      "uno:5",
+      "purple",
+      [],
+      "Buzzer D5."
+    ],
+    [
+      "bz1:1",
+      "uno:GND.1",
+      "black",
+      [],
+      "Buzzer GND."
+    ]
+  ],
+  "montaj": [
+    "İki padı (gerçekte iki metal plaka ya da folyo) D2 ve D3 ile GND arasına bağla.",
+    "RGB LED ortak katotu GND'ye; R, G, B uçlarını 220 Ω dirençlerle D9, D10, D11'e (üçü de PWM).",
+    "Buzzer'ı D5 ile GND arasına bağla.",
+    "Gerçekte dokunmayı iki plakayı tutan kişinin derisi iletir; bu sürümde butonla taklit edilir."
+  ],
+  "testler": [
+    "İki padı birlikte basılı tut: RGB maviden yeşile, sonra kırmızıya geçer; ses tizleşir.",
+    "En üstte kısa zafer ezgisi çalar.",
+    "Bırak: seviye düşer, renk soğur."
+  ],
+  "tanitim": {
+    "amac": "İki pada birlikte dokununca \"aşk ısısını\" renkle ve sesle gösteren parti oyunu.",
+    "nasil": [
+      "İki pada aynı anda basılı olunca seviye her an biraz yükselir, bırakınca düşer.",
+      "Seviye 0–100: renk mavi → yeşil → kırmızı, buzzer frekansı artar.",
+      "Seviye en üste çıkınca kısa bir zafer ezgisi çalar."
+    ],
+    "ogrenilenler": [
+      "RGB LED ve analogWrite",
+      "İki girişi birlikte okuma",
+      "Seviyeyi renge eşleme",
+      "tone ile ses"
+    ],
+    "demo": [
+      {
+        "sure": 1500,
+        "yazi": "Padlara dokunulmuyor: RGB mavi (soğuk), sessiz."
+      },
+      {
+        "sure": 400,
+        "yazi": "1. pada dokunuldu.",
+        "eylem": {
+          "tur": "bas",
+          "id": "pad1"
+        }
+      },
+      {
+        "sure": 5000,
+        "yazi": "İki pada birlikte dokunuldu: ısı yükseliyor, renk ısınıyor, ses tizleşiyor.",
+        "eylem": {
+          "tur": "bas",
+          "id": "pad2"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Bırakıldı: ısı soğuyor.",
+        "eylem": {
+          "tur": "birak",
+          "id": "pad1"
+        }
+      },
+      {
+        "sure": 500,
+        "yazi": "",
+        "eylem": {
+          "tur": "birak",
+          "id": "pad2"
+        }
+      }
+    ]
+  },
+  "kod": {
+    "dil": "arduino",
+    "icerik": "// Aşk ölçeri: iki pada birlikte dokununca seviye yükselir.\n// RGB mavi->yeşil->kırmızı olur, buzzer tizleşir, en üstte zafer ezgisi.\nconst int PAD1 = 2;\nconst int PAD2 = 3;\nconst int KIRMIZI = 9;\nconst int YESIL = 10;\nconst int MAVI = 11;\nconst int BUZZER = 5;\n\nint seviye = 0;        // 0..100\nbool zaferCalindi = false;\n\nvoid renkVer(int s) {\n  // 0 mavi, 50 yeşil, 100 kırmızı.\n  int r, g, b;\n  if (s < 50) { r = 0; g = s * 5; b = (50 - s) * 5; }\n  else { r = (s - 50) * 5; g = (100 - s) * 5; b = 0; }\n  analogWrite(KIRMIZI, r);\n  analogWrite(YESIL, g);\n  analogWrite(MAVI, b);\n}\n\nvoid zafer() {\n  int notalar[] = {523, 659, 784, 1047};\n  for (int i = 0; i < 4; i++) { tone(BUZZER, notalar[i], 120); delay(140); }\n  noTone(BUZZER);\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(PAD1, INPUT_PULLUP);\n  pinMode(PAD2, INPUT_PULLUP);\n  pinMode(KIRMIZI, OUTPUT);\n  pinMode(YESIL, OUTPUT);\n  pinMode(MAVI, OUTPUT);\n  Serial.println(\"Iki pada birlikte dokun.\");\n}\n\nvoid loop() {\n  bool dokunuluyor = digitalRead(PAD1) == LOW && digitalRead(PAD2) == LOW;\n\n  if (dokunuluyor && seviye < 100) seviye++;\n  else if (!dokunuluyor && seviye > 0) seviye -= 2;\n  seviye = constrain(seviye, 0, 100);\n\n  renkVer(seviye);\n\n  if (dokunuluyor && seviye < 100) {\n    tone(BUZZER, 200 + seviye * 9);  // tizleşir\n  } else if (seviye >= 100 && !zaferCalindi) {\n    Serial.println(\"Ask isisi: %100!\");\n    zafer();\n    zaferCalindi = true;\n  } else if (!dokunuluyor) {\n    noTone(BUZZER);\n  }\n  if (seviye < 100) zaferCalindi = false;\n\n  delay(30);\n}"
+  }
+}

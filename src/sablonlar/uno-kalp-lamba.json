@@ -1,0 +1,225 @@
+{
+  "surum": 1,
+  "id": "uno-kalp-lamba",
+  "baslik": "Kalp lamba (hediye)",
+  "ozet": "Nabız gibi atan pembe ışık, gökkuşağı ve sıcak beyaz; düğmeye basınca mod değişir. Sevdiğine masa lambası.",
+  "zorluk": "Kolay",
+  "sure": "45 dakika",
+  "gereksinimler": [
+    "Dört NeoPixel LED tek kabloyla zincirleme bağlıdır.",
+    "Açılışta \"nabız\" modunda pembe ışık yavaşça kısılıp parlar.",
+    "Düğmeye her basışta mod değişir: nabız → gökkuşağı → sıcak beyaz."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 140,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "n1",
+      "left": 280,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "n2",
+      "left": 340,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "n3",
+      "left": 400,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "n4",
+      "left": 460,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn",
+      "left": 280,
+      "top": 170,
+      "attrs": {
+        "color": "purple"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "n1:VDD",
+      "uno:5V",
+      "red",
+      [],
+      "NeoPixel 5 V ile beslenir."
+    ],
+    [
+      "n1:VSS",
+      "uno:GND.1",
+      "black",
+      [],
+      "NeoPixel GND."
+    ],
+    [
+      "n1:DIN",
+      "uno:6",
+      "green",
+      [],
+      "Veri ucu D6'ya; ışık ilk LED'den başlar."
+    ],
+    [
+      "n2:VDD",
+      "uno:5V",
+      "red",
+      [],
+      ""
+    ],
+    [
+      "n2:VSS",
+      "uno:GND.1",
+      "black",
+      [],
+      ""
+    ],
+    [
+      "n2:DIN",
+      "n1:DOUT",
+      "green",
+      [],
+      "1. LED'in çıkışı (DOUT) 2. LED'in girişine (DIN)."
+    ],
+    [
+      "n3:VDD",
+      "uno:5V",
+      "red",
+      [],
+      ""
+    ],
+    [
+      "n3:VSS",
+      "uno:GND.1",
+      "black",
+      [],
+      ""
+    ],
+    [
+      "n3:DIN",
+      "n2:DOUT",
+      "green",
+      [],
+      "Zincir böyle uzar."
+    ],
+    [
+      "n4:VDD",
+      "uno:5V",
+      "red",
+      [],
+      ""
+    ],
+    [
+      "n4:VSS",
+      "uno:GND.1",
+      "black",
+      [],
+      ""
+    ],
+    [
+      "n4:DIN",
+      "n3:DOUT",
+      "green",
+      [],
+      ""
+    ],
+    [
+      "btn:1.r",
+      "uno:2",
+      "blue",
+      [],
+      "Mod düğmesi D2'ye."
+    ],
+    [
+      "btn:2.r",
+      "uno:GND.2",
+      "black",
+      [],
+      "Düğmenin öbür ucu GND."
+    ]
+  ],
+  "montaj": [
+    "Dört NeoPixel'i yan yana diz; her birinin VDD'sini 5 V'a, VSS'ini GND'ye bağla.",
+    "Veriyi zincirle: D6 → 1. LED DIN; 1. LED DOUT → 2. LED DIN; böyle devam.",
+    "Mod düğmesini D2 ile GND arasına bağla.",
+    "Gerçek lambada 8–16 LED'lik NeoPixel halka daha güzel durur; koddaki SAYI'yı değiştir."
+  ],
+  "testler": [
+    "Açılışta ışık pembe ve yavaşça nefes alıyor.",
+    "Düğmeye bas: gökkuşağı akıyor. Tekrar bas: sıcak beyaz. Tekrar bas: nabza döner."
+  ],
+  "tanitim": {
+    "amac": "Nabız gibi atan ışıklı bir masa lambası. Düğmeyle üç mod: pembe nabız, gökkuşağı, sıcak beyaz.",
+    "nasil": [
+      "Dört NeoPixel tek veri kablosuyla zincirlenir; her birinin rengini kod ayrı ayrı belirler.",
+      "Nabız modunda parlaklık sinüsle yavaşça kısılıp artar.",
+      "Düğme her basışta sıradaki moda geçer."
+    ],
+    "ogrenilenler": [
+      "NeoPixel zinciri",
+      "Renk ve parlaklık",
+      "Düğmeyle mod değiştirme",
+      "HSV ile gökkuşağı"
+    ],
+    "demo": [
+      {
+        "sure": 4000,
+        "yazi": "Nabız modu: pembe ışık yavaşça nefes alıyor."
+      },
+      {
+        "sure": 4000,
+        "yazi": "Düğmeye basıldı: gökkuşağı renkleri akıyor.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn"
+        }
+      },
+      {
+        "sure": 500,
+        "yazi": "Düğme bırakıldı.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn"
+        }
+      },
+      {
+        "sure": 4000,
+        "yazi": "Tekrar basıldı: sıcak beyaz ışık.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn"
+        }
+      },
+      {
+        "sure": 500,
+        "yazi": "",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn"
+        }
+      }
+    ]
+  },
+  "kod": {
+    "dil": "arduino",
+    "icerik": "// Kalp lamba: dört NeoPixel; düğmeyle üç mod (nabız, gökkuşağı, sıcak beyaz).\n#include <Adafruit_NeoPixel.h>\n\nconst int LED_PIN = 6;\nconst int LED_SAYISI = 4;   // NeoPixel halkan kaç LED'liyse onu yaz\nconst int MOD_PIN = 2;\n\nAdafruit_NeoPixel serit(LED_SAYISI, LED_PIN, NEO_GRB + NEO_KHZ800);\nint mod = 0;\nint sonButon = HIGH;\nlong gokkusagiFaz = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  serit.begin();\n  serit.setBrightness(200);\n  pinMode(MOD_PIN, INPUT_PULLUP);\n  delay(50);\n  sonButon = digitalRead(MOD_PIN);  // açılış durumunu al; sahte ilk basışı önler\n  Serial.println(\"Kalp lamba hazir. Moda bas.\");\n}\n\nvoid nabiz() {\n  // Sinüsle nefes alan pembe ışık.\n  float f = (sin(millis() / 600.0) + 1) / 2;         // 0..1\n  int v = 25 + f * 230;\n  for (int i = 0; i < LED_SAYISI; i++) {\n    serit.setPixelColor(i, serit.Color(v, v / 6, v / 3));  // pembe\n  }\n}\n\nvoid gokkusagi() {\n  gokkusagiFaz += 256;\n  for (int i = 0; i < LED_SAYISI; i++) {\n    int ton = (gokkusagiFaz + i * 65536L / LED_SAYISI) % 65536;\n    serit.setPixelColor(i, serit.gamma32(serit.ColorHSV(ton)));\n  }\n}\n\nvoid sicakBeyaz() {\n  for (int i = 0; i < LED_SAYISI; i++) {\n    serit.setPixelColor(i, serit.Color(255, 160, 70));\n  }\n}\n\nvoid loop() {\n  int b = digitalRead(MOD_PIN);\n  if (b == LOW && sonButon == HIGH) {\n    mod = (mod + 1) % 3;\n    Serial.print(\"Mod: \");\n    Serial.println(mod == 0 ? \"nabiz\" : mod == 1 ? \"gokkusagi\" : \"sicak beyaz\");\n    delay(40);  // titreşim\n  }\n  sonButon = b;\n\n  if (mod == 0) nabiz();\n  else if (mod == 1) gokkusagi();\n  else sicakBeyaz();\n\n  serit.show();\n  delay(20);\n}"
+  }
+}
