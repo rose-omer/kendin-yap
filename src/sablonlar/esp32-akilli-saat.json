@@ -1,0 +1,209 @@
+{
+  "surum": 1,
+  "id": "esp32-akilli-saat",
+  "baslik": "Akıllı saat",
+  "ozet": "ESP32 + OLED bilek saati: saati internetten alır, hava durumunu gösterir, kronometresi var. İki düğmeyle sayfalar arasında gezinirsin.",
+  "zorluk": "İleri",
+  "sure": "2 saat",
+  "gereksinimler": [
+    "ESP32 Wi-Fi'ye bağlanır, saati internetten (NTP) alır.",
+    "A düğmesi sayfaları değiştirir: Saat → Hava → Kronometre.",
+    "Saat sayfasında büyük saat, tarih ve gün; iki nokta yanıp söner.",
+    "Hava sayfasında şehrin güncel sıcaklığı (open-meteo) gösterilir.",
+    "Kronometre B düğmesiyle başlar, durur, sıfırlanır."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "left": 0,
+      "top": 120,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "left": 280,
+      "top": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnA",
+      "left": 300,
+      "top": 200,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnB",
+      "left": 300,
+      "top": 320,
+      "attrs": {
+        "color": "blue"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      [],
+      "OLED GND."
+    ],
+    [
+      "oled:VIN",
+      "esp:3V3",
+      "red",
+      [],
+      "OLED 3,3 V."
+    ],
+    [
+      "oled:DATA",
+      "esp:D21",
+      "blue",
+      [],
+      "SDA = D21."
+    ],
+    [
+      "oled:CLK",
+      "esp:D22",
+      "green",
+      [],
+      "SCL = D22."
+    ],
+    [
+      "btnA:1.r",
+      "esp:D14",
+      "green",
+      [],
+      "Sayfa düğmesi D14'e."
+    ],
+    [
+      "btnA:2.r",
+      "esp:GND.2",
+      "black",
+      [],
+      "Düğmenin öbür ucu GND."
+    ],
+    [
+      "btnB:1.r",
+      "esp:D27",
+      "blue",
+      [],
+      "İşlem düğmesi D27'ye."
+    ],
+    [
+      "btnB:2.r",
+      "esp:GND.2",
+      "black",
+      [],
+      "Düğmenin öbür ucu GND."
+    ]
+  ],
+  "montaj": [
+    "OLED'in dört kablosunu tak: GND, VIN 3,3 V, DATA = D21, CLK = D22.",
+    "İki düğmeyi bağla: A düğmesi D14 ile GND, B düğmesi D27 ile GND arasına.",
+    "Koddaki AG_ADI ve PAROLA'ya kendi Wi-Fi bilgilerini yaz.",
+    "Başka şehir istersen HAVA_ADRES'teki enlem/boylamı ve SEHIR adını değiştir.",
+    "Gerçek bilek saati için küçük bir LiPo pil ve şarj kartı (TP4056) ekleyip kutuya al."
+  ],
+  "testler": [
+    "Açılışta \"Wi-Fi...\" yazar, sonra büyük saat görünür; iki nokta yanıp söner.",
+    "A düğmesine bas: Hava sayfası açılır ve sıcaklık yüklenir.",
+    "Tekrar A: Kronometre. B ile başlat, durdur; tekrar B ile sıfırla.",
+    "Seri ekranda sayfa değişimleri ve hava sıcaklığı yazar."
+  ],
+  "tanitim": {
+    "amac": "Saati internetten alan, hava durumu ve kronometresi olan, iki düğmeyle gezilen bir bilek saati.",
+    "nasil": [
+      "ESP32 açılışta Wi-Fi'ye bağlanır ve saati NTP ile alır; sonra kendi sayar.",
+      "A düğmesi üç sayfa arasında döner: Saat, Hava, Kronometre.",
+      "Hava sayfasında sıcaklık open-meteo'dan çekilir; kronometre B düğmesiyle çalışır."
+    ],
+    "ogrenilenler": [
+      "Wi-Fi ve NTP saati",
+      "HTTPClient ile internetten veri",
+      "OLED'de sayfa düzeni",
+      "Düğmeyle durum yönetimi",
+      "millis ile kronometre"
+    ],
+    "demo": [
+      {
+        "sure": 4000,
+        "yazi": "Saat sayfası: büyük saat, tarih ve gün; iki nokta yanıp sönüyor."
+      },
+      {
+        "sure": 400,
+        "yazi": "A düğmesine basıldı.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btnA"
+        }
+      },
+      {
+        "sure": 4000,
+        "yazi": "Hava sayfası: şehrin güncel sıcaklığı internetten geldi.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btnA"
+        }
+      },
+      {
+        "sure": 400,
+        "yazi": "A düğmesine basıldı.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btnA"
+        }
+      },
+      {
+        "sure": 1500,
+        "yazi": "Kronometre sayfası.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btnA"
+        }
+      },
+      {
+        "sure": 400,
+        "yazi": "B düğmesi: kronometre başladı.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btnB"
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Süre akıyor...",
+        "eylem": {
+          "tur": "birak",
+          "id": "btnB"
+        }
+      },
+      {
+        "sure": 400,
+        "yazi": "B düğmesi: durdu.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btnB"
+        }
+      },
+      {
+        "sure": 1500,
+        "yazi": "Kronometre durdu; tekrar B ile sıfırlanır.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btnB"
+        }
+      }
+    ]
+  },
+  "kod": {
+    "dil": "arduino",
+    "icerik": "// Akıllı saat: ESP32 + OLED. Saati internetten (NTP) alır. İki düğme:\n// A = sayfa değiştir (Saat → Hava → Kronometre), B = kronometreyi başlat/durdur/sıfırla.\n// Hava sıcaklığı open-meteo.com'dan çekilir (ücretsiz, anahtarsız).\n#include <WiFi.h>\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n#include <HTTPClient.h>\n#include <time.h>\n\nconst char* AG_ADI = \"EvimWiFi\";     // kendi Wi-Fi ağının adı\nconst char* PAROLA = \"parola123\";    // kendi Wi-Fi parolan\nconst long SAAT_DILIMI = 3 * 3600;   // Türkiye UTC+3\nconst char* SEHIR = \"Istanbul\";\n// Hava için şehrin enlem/boylamı (open-meteo). İstanbul: 41.01, 28.97.\nconst char* HAVA_ADRES = \"https://api.open-meteo.com/v1/forecast?latitude=41.01&longitude=28.97&current=temperature_2m\";\n\nconst int SAYFA_PIN = 14;   // A düğmesi: sayfa değiştir\nconst int ISLEM_PIN = 27;   // B düğmesi: kronometre\n\nAdafruit_SSD1306 ekran(128, 64, &Wire, -1);\n// OLED yazı tipinde Türkçe harf yok; gün adları ASCII.\nconst char* GUNLER[] = {\"Pazar\", \"Pzt\", \"Sali\", \"Cars\", \"Pers\", \"Cuma\", \"Cmt\"};\n\nconst int SAYFA_SAYISI = 3;\nint sayfa = 0;              // 0 saat, 1 hava, 2 kronometre\nint sonA = HIGH, sonB = HIGH;\n\n// Kronometre durumu\nbool kronCalisiyor = false;\nunsigned long kronBaslangic = 0;\nunsigned long kronBirikmis = 0;\n\n// Hava durumu\nfloat havaSicaklik = NAN;\nunsigned long sonHava = 0;\nchar havaSaati[6] = \"--:--\";\n\nvoid wifiBaglan() {\n  WiFi.mode(WIFI_STA);\n  WiFi.begin(AG_ADI, PAROLA);\n  unsigned long bas = millis();\n  while (WiFi.status() != WL_CONNECTED && millis() - bas < 15000) delay(300);\n}\n\nfloat havaAl() {\n  if (WiFi.status() != WL_CONNECTED) return NAN;\n  HTTPClient http;\n  http.begin(HAVA_ADRES);\n  int kod = http.GET();\n  float s = NAN;\n  if (kod == 200) {\n    String j = http.getString();\n    // Yanıtta temperature_2m iki kez geçer; önce \"current\" bölümünü bul, değeri oradan al.\n    int bas = j.indexOf(\"\\\"current\\\"\");\n    int i = bas >= 0 ? j.indexOf(\"\\\"temperature_2m\\\":\", bas) : -1;\n    if (i >= 0) s = j.substring(i + 17).toFloat();\n  } else {\n    Serial.printf(\"Hava HTTP hatasi: %d\\n\", kod);\n  }\n  http.end();\n  return s;\n}\n\nunsigned long kronSure() {\n  return kronBirikmis + (kronCalisiyor ? millis() - kronBaslangic : 0);\n}\n\nvoid dugmeleriOku() {\n  int a = digitalRead(SAYFA_PIN);\n  if (a == LOW && sonA == HIGH) {\n    sayfa = (sayfa + 1) % SAYFA_SAYISI;\n    Serial.print(\"Sayfa: \");\n    Serial.println(sayfa == 0 ? \"Saat\" : sayfa == 1 ? \"Hava\" : \"Kronometre\");\n    delay(40);\n  }\n  sonA = a;\n\n  int b = digitalRead(ISLEM_PIN);\n  if (b == LOW && sonB == HIGH) {\n    if (sayfa == 2) {\n      if (kronCalisiyor) {\n        kronBirikmis += millis() - kronBaslangic;\n        kronCalisiyor = false;\n        Serial.println(\"Kronometre: durdu\");\n      } else if (kronBirikmis == 0) {\n        kronBaslangic = millis();\n        kronCalisiyor = true;\n        Serial.println(\"Kronometre: basladi\");\n      } else {\n        kronBirikmis = 0;\n        Serial.println(\"Kronometre: sifirlandi\");\n      }\n    }\n    delay(40);\n  }\n  sonB = b;\n}\n\nvoid saatSayfasi() {\n  struct tm t;\n  if (!getLocalTime(&t, 0)) {\n    ekran.setTextSize(1);\n    ekran.setCursor(0, 28);\n    ekran.print(\"Saat bekleniyor...\");\n    return;\n  }\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  char ust[26];\n  sprintf(ust, \"%s %02d.%02d.%04d\", GUNLER[t.tm_wday], t.tm_mday, t.tm_mon + 1, t.tm_year + 1900);\n  ekran.print(ust);\n\n  // Büyük saat; iki nokta her yarım saniyede yanıp söner.\n  char ss[6];\n  sprintf(ss, \"%02d%c%02d\", t.tm_hour, (millis() / 500) % 2 ? ':' : ' ', t.tm_min);\n  ekran.setTextSize(3);\n  ekran.setCursor(10, 22);\n  ekran.print(ss);\n\n  char sn[4];\n  sprintf(sn, \":%02d\", t.tm_sec);\n  ekran.setTextSize(1);\n  ekran.setCursor(107, 40);\n  ekran.print(sn);\n\n  ekran.setCursor(0, 56);\n  ekran.print(WiFi.status() == WL_CONNECTED ? \"WiFi: bagli\" : \"WiFi: yok\");\n}\n\nvoid havaSayfasi() {\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  ekran.print(SEHIR);\n  if (isnan(havaSicaklik)) {\n    ekran.setCursor(0, 28);\n    ekran.print(WiFi.status() == WL_CONNECTED ? \"Yukleniyor...\" : \"WiFi yok\");\n  } else {\n    ekran.setTextSize(3);\n    ekran.setCursor(4, 22);\n    ekran.print(havaSicaklik, 1);\n    ekran.setTextSize(1);\n    ekran.setCursor(112, 24);\n    ekran.print(\"C\");\n  }\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 56);\n  ekran.print(\"Guncel: \");\n  ekran.print(havaSaati);\n}\n\nvoid kronSayfasi() {\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 0);\n  ekran.print(\"Kronometre\");\n  unsigned long ms = kronSure();\n  char buf[12];\n  sprintf(buf, \"%02lu:%02lu.%lu\", ms / 60000, (ms / 1000) % 60, (ms / 100) % 10);\n  ekran.setTextSize(2);\n  ekran.setCursor(14, 26);\n  ekran.print(buf);\n  ekran.setTextSize(1);\n  ekran.setCursor(0, 56);\n  ekran.print(kronCalisiyor ? \"B: durdur\" : (kronSure() ? \"B: sifirla\" : \"B: basla\"));\n}\n\nvoid setup() {\n  Serial.begin(115200);\n  Wire.begin(21, 22);\n  if (!ekran.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {\n    Serial.println(\"OLED bulunamadi (0x3C).\");\n    while (true) delay(1000);\n  }\n  ekran.setTextColor(SSD1306_WHITE);\n  pinMode(SAYFA_PIN, INPUT_PULLUP);\n  pinMode(ISLEM_PIN, INPUT_PULLUP);\n\n  ekran.clearDisplay();\n  ekran.setCursor(0, 0);\n  ekran.println(\"Akilli saat\");\n  ekran.println(\"Wi-Fi...\");\n  ekran.display();\n\n  wifiBaglan();\n  configTime(SAAT_DILIMI, 0, \"pool.ntp.org\");\n  delay(50);\n  sonA = digitalRead(SAYFA_PIN);  // açılış durumunu al; sahte ilk basışı önler\n  sonB = digitalRead(ISLEM_PIN);\n  Serial.println(WiFi.status() == WL_CONNECTED ? \"Baglandi.\" : \"Wi-Fi yok.\");\n}\n\nvoid loop() {\n  dugmeleriOku();\n\n  // Hava sayfasındayken sıcaklığı ilk açılışta ve 5 dakikada bir yenile.\n  if (sayfa == 1 && (isnan(havaSicaklik) || millis() - sonHava > 300000)) {\n    havaSicaklik = havaAl();\n    sonHava = millis();\n    struct tm t;\n    if (getLocalTime(&t, 0)) sprintf(havaSaati, \"%02d:%02d\", t.tm_hour, t.tm_min);\n    Serial.printf(\"Hava: %.1f C\\n\", havaSicaklik);\n  }\n\n  ekran.clearDisplay();\n  if (sayfa == 0) saatSayfasi();\n  else if (sayfa == 1) havaSayfasi();\n  else kronSayfasi();\n  ekran.display();\n  delay(30);\n}"
+  }
+}
