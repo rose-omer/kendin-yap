@@ -109,7 +109,9 @@ export const PARCALAR = {
   'wokwi-ds1307': { ad: 'DS1307 saat modülü', kategori: 'Sensör', arama: 'DS1307', iceren: ['ds1307', 'modül'], haric: ['entegre', 'dip8'], ozet: 'Elektrik gitse de saati tutar. 5 V ister.', besleme: { '5V': [4.5, 5.5] }, gnd: ['GND'] },
 
   'wokwi-ssd1306': { ad: 'OLED ekran 0,96" (SSD1306, I2C)', kategori: 'Ekran', arama: '0.96 OLED', iceren: ['oled'], haric: ['1.3', 'spi', 'renkli'], ozet: 'Küçük ekran. DATA = SDA, CLK = SCL.', besleme: { VIN: [3.3, 5.5] }, gnd: ['GND'] },
-  'wokwi-lcd1602': { ad: 'LCD 16x2 (paralel)', kategori: 'Ekran', arama: '16x2 LCD', iceren: ['16x2'], haric: ['çerçeve', 'cerceve'], ozet: '2 satır yazı ekranı. 5 V ister.', besleme: { VDD: [4.5, 5.5] }, gnd: ['VSS', 'RW'] },
+  'wokwi-lcd1602': { ad: 'LCD 16x2 (paralel)', kategori: 'Ekran', arama: '16x2 LCD', iceren: ['16x2'], haric: ['çerçeve', 'cerceve', 'i2c'], ozet: '2 satır yazı ekranı. 5 V ister.', besleme: { VDD: [4.5, 5.5] }, gnd: ['VSS', 'RW'] },
+  // Çeşit: aynı Wokwi öğesi, attrs.pins = "i2c". PCF8574 arka kartlı LCD, LiquidCrystal_I2C ile.
+  'wokwi-lcd1602-i2c': { tur: 'wokwi-lcd1602', varsayilan: { pins: 'i2c' }, ad: 'LCD 16x2 (I2C)', kategori: 'Ekran', arama: '16x2 I2C LCD', iceren: ['16x2', 'i2c'], haric: ['çerçeve', 'cerceve'], ozet: '2 satır yazı ekranı; 4 kablo yeter (SDA, SCL). Adres çoğunlukla 0x27. 5 V ister.', besleme: { VCC: [4.5, 5.5] }, gnd: ['GND'] },
   'wokwi-7segment': { ad: '7 segment gösterge', kategori: 'Ekran', arama: '7 segment display', iceren: ['segment'], haric: ['4 dijit', '4 hane', 'modül'], ozet: 'Tek basamak sayı gösterir.' },
 
   'wokwi-servo': { ad: 'Servo motor (SG90)', kategori: 'Hareket', arama: 'SG90', iceren: ['sg90'], haric: ['tutucu', 'braket', 'pan', 'tilt'], ozet: '0–180° döner. Kahverengi GND, kırmızı V+, turuncu PWM.', besleme: { 'V+': [4.8, 6] }, gnd: ['GND'], mcuCikis: ['PWM'], not: 'Servo ani akım çeker. İki servodan fazlası için ayrı 5 V kaynak kullan.' },
@@ -142,6 +144,14 @@ function liste(yazi) {
   return yazi ? String(yazi).split(',').map((s) => s.trim()).filter(Boolean) : [];
 }
 
+// Katalog anahtarı: çoğunlukla tür. Çeşitlerde (ör. I2C LCD) tür aynıdır, ayrımı varsayılan attrs yapar.
+export function katalogAnahtari(parca) {
+  for (const [anahtar, b] of Object.entries(PARCALAR)) {
+    if (b.tur === parca.type && Object.entries(b.varsayilan || {}).every(([a, v]) => parca.attrs?.[a] === v)) return anahtar;
+  }
+  return parca.type;
+}
+
 // Bir parçanın boyutu ve pinleri. pinVeri = pinler.json içeriği.
 export function parcaOlcu(parca, pinVeri) {
   if (parca.type === KY_MODUL) {
@@ -156,7 +166,7 @@ export function parcaOlcu(parca, pinVeri) {
     ];
     return { w: MODUL_EN, h, pins };
   }
-  const v = pinVeri[parca.type];
+  const v = pinVeri[katalogAnahtari(parca)] || pinVeri[parca.type];
   return v ? { w: v.w, h: v.h, pins: v.pins } : null;
 }
 
@@ -178,7 +188,7 @@ export function parcaBilgi(parca) {
     const hazir = Object.values(MODUL_HAZIR).find((m) => m.baslik === a.baslik);
     return { ad: a.baslik || 'Modül', kategori: 'Modül', besleme: aralik, kaynak, gnd: liste(a.gnd), mcuCikis: liste(a.mcuCikis), arama: hazir?.arama || a.arama || a.baslik, iceren: hazir?.iceren || [], haric: hazir?.haric || [], ozet: a.ozet };
   }
-  const k = PARCALAR[parca.type] || { ad: parca.type.replace('wokwi-', ''), kategori: 'Diğer' };
+  const k = PARCALAR[katalogAnahtari(parca)] || { ad: parca.type.replace('wokwi-', ''), kategori: 'Diğer' };
   const kart = KARTLAR[parca.type];
   return { ...k, kaynak: kart ? kart.kaynak : {}, besleme: k.besleme || {}, gnd: k.gnd || [], mcuCikis: k.mcuCikis || [] };
 }

@@ -26,7 +26,7 @@ export function KopyalaDugme({ metin, etiket = 'Kopyala', className = 'dugme iki
 export function katalogListesi() {
   const liste = Object.entries(PARCALAR)
     .filter(([tur]) => tur !== KY_MODUL)
-    .map(([tur, b]) => ({ anahtar: tur, tur, ad: b.ad, kategori: b.kategori, ozet: b.ozet, attrs: b.varsayilan }));
+    .map(([anahtar, b]) => ({ anahtar, tur: b.tur || anahtar, ad: b.ad, kategori: b.kategori, ozet: b.ozet, attrs: b.varsayilan }));
   for (const [anahtar, m] of Object.entries(MODUL_HAZIR)) {
     const { arama, ozet, ...attrs } = m;
     liste.push({ anahtar, tur: KY_MODUL, ad: m.baslik, kategori: 'Modül', ozet, attrs: { ...attrs, arama, ozet } });

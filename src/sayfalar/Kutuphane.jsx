@@ -52,7 +52,7 @@ export default function Kutuphane() {
             <>
               <h2>{secili.ad}</h2>
               <p>{secili.ozet}</p>
-              {PARCALAR[secili.tur]?.not && <p className="kutu bilgi">{PARCALAR[secili.tur].not}</p>}
+              {PARCALAR[secili.anahtar]?.not && <p className="kutu bilgi">{PARCALAR[secili.anahtar].not}</p>}
               <div className="tek-parca">
                 <Sema key={secili.anahtar} proje={{ id: `tek-${secili.anahtar}`, parts: [parca], connections: [] }} etiketGoster={false} varsayilanKip="canli" />
               </div>
@@ -65,7 +65,7 @@ export default function Kutuphane() {
               <p>
                 Satın al:{' '}
                 {SATICILAR.map((v, i) => (
-                  <span key={v.ad}>{i > 0 && ' · '}<a href={v.url(PARCALAR[secili.tur]?.arama || secili.attrs?.arama || secili.ad)} target="_blank" rel="noreferrer">{v.ad}</a></span>
+                  <span key={v.ad}>{i > 0 && ' · '}<a href={v.url(PARCALAR[secili.anahtar]?.arama || secili.attrs?.arama || secili.ad)} target="_blank" rel="noreferrer">{v.ad}</a></span>
                 ))}
               </p>
             </>

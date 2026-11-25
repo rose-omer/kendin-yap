@@ -167,6 +167,12 @@ Küçük ekran. DATA = SDA, CLK = SCL. Boyut: 150x120.
 - Besleme: VDD 4.5–5.5 V.
 - Pinler: `VSS`@32,131 `VDD`@42,131 `V0`@52,131 `RS`@61,131 `RW`@71,131 `E`@80,131 `D0`@90,131 `D1`@100,131 `D2`@109,131 `D3`@119,131 `D4`@128,131 `D5`@138,131 `D6`@147,131 `D7`@157,131 `A`@167,131 `K`@176,131
 
+### `wokwi-lcd1602` — LCD 16x2 (I2C)
+2 satır yazı ekranı; 4 kablo yeter (SDA, SCL). Adres çoğunlukla 0x27. 5 V ister. Boyut: 302x140.
+- Besleme: VCC 4.5–5.5 V.
+- Varsayılan attrs: `{"pins":"i2c"}`.
+- Pinler: `GND`@4,32 `VCC`@4,42 `SDA`@4,51 `SCL`@4,61
+
 ### `wokwi-7segment` — 7 segment gösterge
 Tek basamak sayı gösterir. Boyut: 47x87.
 - Pinler: `COM.1`@24,72 `COM.2`@24,4 `A`@33,4 `B`@43,4 `C`@33,72 `D`@14,72 `E`@5,72 `F`@14,4 `G`@5,4 `DP`@43,72

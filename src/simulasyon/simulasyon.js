@@ -14,7 +14,7 @@ import {
   neopikselCiz, neopikselZincirleri, olayDinleyici, parcaCikislari as modulCikislari, parcaDurumu, parcaKapat,
   roleleriGuncelle,
 } from './parcalar.js';
-import { AdimSayaci, dht22Dalgasi, hx711Ham, i2cCihazlari, necDalgasi } from './cihazlar.js';
+import { AdimSayaci, Pcf8574Lcd, dht22Dalgasi, hx711Ham, i2cCihazlari, necDalgasi } from './cihazlar.js';
 
 export const SIM_KARTLARI = ['wokwi-arduino-uno', 'wokwi-arduino-nano', 'wokwi-esp32-devkit-v1'];
 
@@ -395,13 +395,26 @@ export function simulasyonBaslat({ proje, hex, wasm, elemanBul, onSeri, onHata, 
     const m = kartPiniBul(uc);
     return m?.port === 'C' && m.bit === bit;
   };
-  const i2c = i2cTanimlari(proje, (p) => i2cPin(`${p.id}:SDA`, 4) && i2cPin(`${p.id}:SCL`, 5), kaynakMi)
+  const i2cBaglandi = (p) => i2cPin(`${p.id}:SDA`, 4) && i2cPin(`${p.id}:SCL`, 5);
+  const i2c = i2cTanimlari(proje, i2cBaglandi, kaynakMi)
     .map((t) => ({ ...t, deger: () => mpuDegeri(ayar, t.id) }));
-  makine.i2cBagla(i2cCihazlari(i2c));
+  const i2cAygitlari = i2cCihazlari(i2c);
+
+  // --- I2C LCD (PCF8574 arka kart): baytlar Wire'dan gelir, Hd44780'e nibble olarak yazılır ---
+  const i2cLcdler = new Map(); // parça id → { lcd, pcf }
+  for (const p of proje.parts.filter((x) => x.type === 'wokwi-lcd1602' && x.attrs?.pins === 'i2c')) {
+    if (!i2cBaglandi(p)) continue;
+    const adres = Number(p.attrs?.adres ?? 0x27);
+    const lcd = new Hd44780();
+    const pcf = new Pcf8574Lcd(lcd);
+    i2cLcdler.set(p.id, { lcd, pcf });
+    if (!i2cAygitlari.has(adres)) i2cAygitlari.set(adres, pcf);
+  }
+  makine.i2cBagla(i2cAygitlari);
 
   // --- LCD 16x2 (paralel): E düşünce RS ve veri uçlarını oku ---
   const lcdler = new Map(); // parça id → Hd44780
-  for (const p of proje.parts.filter((x) => x.type === 'wokwi-lcd1602')) {
+  for (const p of proje.parts.filter((x) => x.type === 'wokwi-lcd1602' && x.attrs?.pins !== 'i2c')) {
     const e = kartPiniBul(`${p.id}:E`);
     const rs = kartPiniBul(`${p.id}:RS`);
     if (!e?.port || !rs?.port) continue;
@@ -530,10 +543,14 @@ export function simulasyonBaslat({ proje, hex, wasm, elemanBul, onSeri, onHata, 
         if (o && o.darbe > 400 && o.darbe < 2600) el.angle = Math.round(((o.darbe - 544) / (2400 - 544)) * 180);
       }
       if (p.type === 'wokwi-pir-motion-sensor') el.ledOn = (pirBitis[p.id] || 0) > performance.now();
-      if (p.type === 'wokwi-lcd1602') {
+      if (p.type === 'wokwi-lcd1602' && p.attrs?.pins !== 'i2c') {
         const guc = cozum.hatDegeri(`${p.id}:VDD`) === 1 && cozum.hatDegeri(`${p.id}:VSS`) === 0;
         const isik = cozum.hatDegeri(`${p.id}:A`) === 1 && cozum.hatDegeri(`${p.id}:K`) === 0;
         lcdler.get(p.id)?.ciz(el, guc, isik);
+      }
+      if (p.type === 'wokwi-lcd1602' && p.attrs?.pins === 'i2c') {
+        const g = i2cLcdler.get(p.id);
+        if (g) g.lcd.ciz(el, cozum.hatDegeri(`${p.id}:VCC`) === 1 && cozum.hatDegeri(`${p.id}:GND`) === 0, g.pcf.isik);
       }
       gorseller(p, el, cozum, seviye, durum, ayar);
     }

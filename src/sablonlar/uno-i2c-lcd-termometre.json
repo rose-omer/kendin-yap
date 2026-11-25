@@ -1,0 +1,166 @@
+{
+  "surum": 1,
+  "id": "uno-i2c-lcd-termometre",
+  "baslik": "I2C LCD termometre",
+  "ozet": "DHT22 sıcaklık ve nemi, 4 kabloyla bağlanan I2C LCD ekranda gösterir. Paralel LCD'ye göre çok daha az kablo.",
+  "zorluk": "Kolay",
+  "sure": "30 dakika",
+  "gereksinimler": [
+    "LCD yalnız 4 kabloyla bağlanır: VCC, GND, SDA, SCL.",
+    "Açılışta üst satırda \"Termometre\" yazar.",
+    "Alt satır sıcaklığı (°C) ve nemi (%) her saniye günceller.",
+    "Sensör okunamazsa alt satırda uyarı çıkar."
+  ],
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "left": 0,
+      "top": 120,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "left": 260,
+      "top": 0,
+      "attrs": {
+        "pins": "i2c"
+      }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "left": 300,
+      "top": 180,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rCek",
+      "left": 230,
+      "top": 250,
+      "attrs": {
+        "value": "10000"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "lcd:GND",
+      "uno:GND.1",
+      "black",
+      [],
+      "LCD GND."
+    ],
+    [
+      "lcd:VCC",
+      "uno:5V",
+      "red",
+      [],
+      "LCD 5 V ile beslenir."
+    ],
+    [
+      "lcd:SDA",
+      "uno:A4",
+      "blue",
+      [],
+      "Uno'da I2C veri hattı sabittir: SDA = A4."
+    ],
+    [
+      "lcd:SCL",
+      "uno:A5",
+      "green",
+      [],
+      "Uno'da I2C saat hattı sabittir: SCL = A5."
+    ],
+    [
+      "dht:VCC",
+      "uno:5V",
+      "red",
+      [],
+      "Sensör 5 V."
+    ],
+    [
+      "dht:GND",
+      "uno:GND.2",
+      "black",
+      [],
+      "Sensör GND."
+    ],
+    [
+      "dht:SDA",
+      "uno:2",
+      "orange",
+      [],
+      "Sensörün veri ucu D2'ye."
+    ],
+    [
+      "dht:SDA",
+      "rCek:1",
+      "orange",
+      [],
+      "Veri ucu ile VCC arasına 10 kΩ çekme direnci."
+    ],
+    [
+      "rCek:2",
+      "uno:5V",
+      "red",
+      [],
+      "Çekme direncinin öbür ucu 5 V."
+    ]
+  ],
+  "montaj": [
+    "LCD'nin dört kablosunu tak: VCC 5 V, GND, SDA = A4, SCL = A5.",
+    "DHT22'yi bağla; veri ucu ile 5 V arasına 10 kΩ çekme direnci koy.",
+    "Kodu yükle. LCD boş ya da bozuk yazıyorsa adresi 0x3F yap (bazı kartlar bunu kullanır).",
+    "Yazı soluksa LCD kartının arkasındaki mavi potansiyometreyle kontrastı ayarla."
+  ],
+  "testler": [
+    "Üst satırda \"Termometre\" yazıyor.",
+    "Alt satır sıcaklığı ve nemi gösteriyor; simülasyonda sağ paneldeki kaydırıcıyla değiştir.",
+    "Kaydırıcıyı oynatınca LCD'deki değer değişiyor."
+  ],
+  "tanitim": {
+    "amac": "4 kabloyla bağlanan I2C LCD ekranda sıcaklık ve nemi gösteren termometre. Paralel LCD 12 kablo isterken I2C sürümü 4 kabloyla aynı işi yapar.",
+    "nasil": [
+      "LCD arkasındaki PCF8574 kartı I2C ile çalışır; Arduino yalnız SDA ve SCL kullanır.",
+      "DHT22 sıcaklık ve nemi okur.",
+      "Değerler her saniye LCD'nin alt satırında güncellenir."
+    ],
+    "ogrenilenler": [
+      "I2C LCD bağlama",
+      "LiquidCrystal_I2C kütüphanesi",
+      "Özel karakter (derece işareti)",
+      "DHT22 okuma"
+    ],
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "LCD sıcaklığı ve nemi gösterir: 24 °C, %45."
+      },
+      {
+        "sure": 3500,
+        "yazi": "Oda ısındı: LCD 31 °C yazar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 31
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Nem arttı: LCD %80 yazar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:nem",
+          "deger": 80
+        }
+      }
+    ]
+  },
+  "kod": {
+    "dil": "arduino",
+    "icerik": "// I2C LCD ekranlı termometre: DHT22 sıcaklık ve nemi 4 kabloyla bağlanan LCD'de gösterir.\n// Paralel LCD 6 veri kablosu ister; I2C sürümü yalnız SDA ve SCL (+ VCC, GND) kullanır.\n// LCD adresi çoğunlukla 0x27; bazı kartlarda 0x3F. Çalışmazsa adresi değiştir.\n#include <Wire.h>\n#include <LiquidCrystal_I2C.h>\n#include <DHT.h>\n\nconst int DHT_PIN = 2;\nLiquidCrystal_I2C lcd(0x27, 16, 2);\nDHT dht(DHT_PIN, DHT22);\n\nbyte derece[8] = {0b01100, 0b10010, 0b10010, 0b01100, 0, 0, 0, 0};\n\nvoid setup() {\n  Serial.begin(9600);\n  lcd.init();\n  lcd.backlight();\n  lcd.createChar(0, derece);\n  dht.begin();\n  lcd.setCursor(0, 0);\n  lcd.print(\"Termometre\");\n}\n\nvoid loop() {\n  float sicaklik = dht.readTemperature();\n  float nem = dht.readHumidity();\n  if (isnan(sicaklik)) {\n    lcd.setCursor(0, 1);\n    lcd.print(\"Sensor okunamadi\");\n    delay(1000);\n    return;\n  }\n  lcd.setCursor(0, 1);\n  lcd.print(\"Isi \");\n  lcd.print(sicaklik, 1);\n  lcd.write(byte(0));\n  lcd.print(\"C Nem \");\n  lcd.print((int)nem);\n  lcd.print(\"%  \");\n  Serial.print(\"Sicaklik: \");\n  Serial.print(sicaklik, 1);\n  Serial.print(\" C  Nem: \");\n  Serial.print((int)nem);\n  Serial.println(\" %\");\n  delay(1000);\n}"
+  }
+}

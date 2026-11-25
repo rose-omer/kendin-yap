@@ -3026,6 +3026,56 @@
    }
   ]
  },
+ "wokwi-lcd1602-i2c": {
+  "w": 302.36,
+  "h": 140.06,
+  "pins": [
+   {
+    "name": "GND",
+    "x": 4,
+    "y": 32,
+    "signals": [
+     {
+      "type": "power",
+      "signal": "GND"
+     }
+    ]
+   },
+   {
+    "name": "VCC",
+    "x": 4,
+    "y": 41.5,
+    "signals": [
+     {
+      "type": "power",
+      "signal": "VCC"
+     }
+    ]
+   },
+   {
+    "name": "SDA",
+    "x": 4,
+    "y": 51,
+    "signals": [
+     {
+      "type": "i2c",
+      "signal": "SDA"
+     }
+    ]
+   },
+   {
+    "name": "SCL",
+    "x": 4,
+    "y": 60.5,
+    "signals": [
+     {
+      "type": "i2c",
+      "signal": "SCL"
+     }
+    ]
+   }
+  ]
+ },
  "wokwi-lcd2004": {
   "w": 355.45,
   "h": 183.52,

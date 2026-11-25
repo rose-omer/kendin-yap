@@ -9,7 +9,7 @@ import {
   analogOranlari, dinamikBaglar, gorselTemizle, gorseller, i2cTanimlari, kareBasi, mpuDegeri,
   neopikselCiz, neopikselZincirleri, parcaCikislari, parcaDurumu, parcaKapat, roleleriGuncelle,
 } from './parcalar.js';
-import { hx711Ham } from './cihazlar.js';
+import { Pcf8574Lcd, hx711Ham } from './cihazlar.js';
 import { CIHAZ_ALANI, F_CIHAZ, F_DARBE, F_DHT, F_OLCU, I_ANALOG, I_GIRIS, I_KISA, KISA_SAYISI, K_DUR, K_UYKU, PIN_SAYISI, W_DURUM, W_KAPASITE, W_UZUNLUK, O_DURUM, O_UZUNLUK, O_KAPASITE, AYRAC, ortakBellek } from './esp32-ortak.js';
 
 const TURLER = new Set([
@@ -121,8 +121,19 @@ export function esp32Baslat({ proje, kart, wasm, elemanBul, onSeri, onHata, onAg
   const ayniHat = (a, b) => sabit.bul(a) === sabit.bul(b);
   const kaynakMi = (uc) => [...kaynak.keys()].some((k) => ayniHat(k, uc));
   // ESP32'de Wire.begin(sda, scl) ile her pin seçilebilir: SDA ve SCL bir GPIO'ya bağlıysa yeter.
-  const i2c = i2cTanimlari(proje, (p) => gpioBul(`${p.id}:SDA`) != null && gpioBul(`${p.id}:SCL`) != null, kaynakMi)
+  const i2cBaglandi = (p) => gpioBul(`${p.id}:SDA`) != null && gpioBul(`${p.id}:SCL`) != null;
+  const i2c = i2cTanimlari(proje, i2cBaglandi, kaynakMi)
     .map((t, i) => ({ ...t, alan: i }));
+  // I2C LCD: işçi PCF8574 baytlarını yönlendirir, ana sayfa Hd44780'e yazar ve çizer.
+  const i2cLcdAdresi = new Map(); // adres → parça id
+  const i2cLcdler = new Map(); // parça id → { lcd, pcf }
+  for (const p of proje.parts.filter((x) => x.type === 'wokwi-lcd1602' && x.attrs?.pins === 'i2c')) {
+    if (!i2cBaglandi(p)) continue;
+    const adres = Number(p.attrs?.adres ?? 0x27);
+    const lcd = new Hd44780();
+    i2cLcdler.set(p.id, { lcd, pcf: new Pcf8574Lcd(lcd) });
+    if (!i2cLcdAdresi.has(adres)) i2cLcdAdresi.set(adres, p.id);
+  }
   const stepler = proje.parts.filter((p) => p.type === 'wokwi-stepper-motor')
     .map((p) => ({ id: p.id, pinler: ['A+', 'A-', 'B+', 'B-'].map((u) => gpioBul(`${p.id}:${u}`) ?? -1) }))
     .filter((s) => s.pinler.some((g) => g >= 0));
@@ -252,10 +263,14 @@ export function esp32Baslat({ proje, kart, wasm, elemanBul, onSeri, onHata, onAg
         const besli = cozum.hatDegeri(`${p.id}:VIN`) === 1 || cozum.hatDegeri(`${p.id}:3V3`) === 1;
         if (besli && gpioBul(`${p.id}:DATA`) != null) oledCiz(el, ekranKomutlari);
       }
-      if (p.type === 'wokwi-lcd1602') {
+      if (p.type === 'wokwi-lcd1602' && p.attrs?.pins !== 'i2c') {
         const guc = cozum.hatDegeri(`${p.id}:VDD`) === 1 && cozum.hatDegeri(`${p.id}:VSS`) === 0;
         const isik = cozum.hatDegeri(`${p.id}:A`) === 1 && cozum.hatDegeri(`${p.id}:K`) === 0;
         lcdler.get(p.id)?.ciz(el, guc, isik);
+      }
+      if (p.type === 'wokwi-lcd1602' && p.attrs?.pins === 'i2c') {
+        const g = i2cLcdler.get(p.id);
+        if (g) g.lcd.ciz(el, cozum.hatDegeri(`${p.id}:VCC`) === 1 && cozum.hatDegeri(`${p.id}:GND`) === 0, g.pcf.isik);
       }
       if (p.type === 'wokwi-stepper-motor' && adimAcilari[p.id] != null) el.angle = adimAcilari[p.id];
       gorseller(p, el, cozum, parlaklik, durum, ayar);
@@ -324,6 +339,7 @@ export function esp32Baslat({ proje, kart, wasm, elemanBul, onSeri, onHata, onAg
       if (data.neo) Object.assign(neoBaytlari, data.neo);
       if (data.adim) Object.assign(adimAcilari, data.adim);
       if (data.lcd) for (let i = 0; i < data.lcd.length; i += 3) lcdPini.get(data.lcd[i])?.yaz(data.lcd[i + 1], data.lcd[i + 2]);
+      if (data.i2clcd) for (let i = 0; i < data.i2clcd.length; i += 2) i2cLcdler.get(i2cLcdAdresi.get(data.i2clcd[i]))?.pcf.yaz(data.i2clcd[i + 1]);
     }
     if (data.tur === 'hata') onHata?.(data.mesaj);
     if (data.tur === 'ag') {
@@ -338,7 +354,13 @@ export function esp32Baslat({ proje, kart, wasm, elemanBul, onSeri, onHata, onAg
   };
   isci.onerror = (e) => onHata?.(`Çalıştırıcı açılamadı: ${e.message}`);
   const bayt = Uint8Array.from(atob(wasm), (c) => c.charCodeAt(0));
-  const cihazlar = { i2c: i2c.map(({ tur, adres, alan }) => ({ tur, adres, alan })), stepler };
+  const cihazlar = {
+    i2c: [
+      ...i2c.map(({ tur, adres, alan }) => ({ tur, adres, alan })),
+      ...[...i2cLcdAdresi.keys()].map((adres) => ({ tur: 'lcd-i2c', adres })),
+    ],
+    stepler,
+  };
   isci.postMessage({ tur: 'baslat', sab, wasm: bayt.buffer, cihazlar }, [bayt.buffer]);
 
   let calisiyor = true;

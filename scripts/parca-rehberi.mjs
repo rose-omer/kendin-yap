@@ -21,7 +21,7 @@ for (const [kategori, liste] of Object.entries(kategoriler)) {
   s.push('');
   for (const [tur, b] of liste) {
     const v = pinVeri[tur];
-    s.push(`### \`${tur}\` — ${b.ad}`);
+    s.push(`### \`${b.tur || tur}\` — ${b.ad}`);
     s.push(`${b.ozet} Boyut: ${Math.round(v.w)}x${Math.round(v.h)}.`);
     const kart = KARTLAR[tur];
     if (kart) {

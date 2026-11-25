@@ -36,6 +36,26 @@ class YazmacliCihaz {
   yazmacOku(i) { return this.y[i]; }
 }
 
+// PCF8574 arka kartlı I2C LCD. LiquidCrystal_I2C her baytı çıkış portu olarak yazar:
+// bit0 RS, bit1 RW, bit2 En, bit3 arka ışık, bit4–7 veri (D4–D7). En düşerken nibble yakalanır.
+export class Pcf8574Lcd {
+  constructor(lcd) {
+    this.lcd = lcd;
+    this.sonEn = 0;
+    this.isik = true;
+  }
+  basla() {}
+  yaz(b) {
+    const en = (b >> 2) & 1;
+    this.isik = !!((b >> 3) & 1);
+    if (this.sonEn && !en) this.lcd.darbe(b & 1, b); // düşen kenar: RS = bit0, nibble = bit4–7
+    this.sonEn = en;
+    return true;
+  }
+  oku() { return 0xff; }
+  dur() {}
+}
+
 // DS1307 gerçek zaman saati. Bilgisayarın saatiyle başlar; adjust() ile yazılan saat ileri sayar.
 export class Ds1307 extends YazmacliCihaz {
   constructor() {

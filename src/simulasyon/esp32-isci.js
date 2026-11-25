@@ -23,6 +23,7 @@ let degisen = {};
 let seri = '';
 let ekran = null;
 let lcd = []; // [e pini, rs, bayt] üçlüleri
+let i2clcd = []; // [adres, bayt]: I2C LCD'ye yazılan PCF8574 baytları (ana sayfaya)
 let neo = null; // GPIO → son NeoPixel baytları
 let adim = null; // step motor id → açı
 let i2cCihaz = new Map(); // adres → cihaz (cihazlar.js)
@@ -117,14 +118,15 @@ function gonder(zorla = false) {
   const simdi = performance.now();
   if (!zorla && simdi - sonGonderim < 16) return;
   sonGonderim = simdi;
-  if (Object.keys(degisen).length || seri || ekran != null || lcd.length || neo || adim) {
-    postMessage({ tur: 'durum', pinler: degisen, seri, ekran, lcd: lcd.length ? lcd : null, neo, adim });
+  if (Object.keys(degisen).length || seri || ekran != null || lcd.length || i2clcd.length || neo || adim) {
+    postMessage({ tur: 'durum', pinler: degisen, seri, ekran, lcd: lcd.length ? lcd : null, i2clcd: i2clcd.length ? i2clcd : null, neo, adim });
     neo = null;
     adim = null;
     degisen = {};
     seri = '';
     ekran = null;
     lcd = [];
+    i2clcd = [];
   }
 }
 
@@ -415,13 +417,22 @@ onmessage = async ({ data }) => {
   if (data.tur !== 'baslat') return;
   ({ int, float, posta, olayKutusu } = gorunumler(data.sab));
   const cihazlar = data.cihazlar || { i2c: [], stepler: [] };
-  i2cCihaz = i2cCihazlari(cihazlar.i2c.map((t) => ({
+  i2cCihaz = i2cCihazlari(cihazlar.i2c.filter((t) => t.tur !== 'lcd-i2c').map((t) => ({
     ...t,
     deger: () => {
       const v = (i) => float[F_CIHAZ + t.alan * CIHAZ_ALANI + i];
       return { ax: v(0), ay: v(1), az: v(2), gx: v(3), gy: v(4), gz: v(5), sicaklik: v(6) };
     },
   })));
+  // I2C LCD: baytları ana sayfaya yönlendir (Hd44780 orada, ekran öğesini çizer).
+  for (const t of cihazlar.i2c.filter((x) => x.tur === 'lcd-i2c')) {
+    i2cCihaz.set(t.adres, {
+      basla() {},
+      yaz(b) { i2clcd.push(t.adres, b); gonder(); return true; },
+      oku: () => 0xff,
+      dur() {},
+    });
+  }
   stepler = cihazlar.stepler.map((s) => ({ ...s, sayac: new AdimSayaci() }));
   try {
     const { instance } = await WebAssembly.instantiate(data.wasm, { env, wasi_snapshot_preview1: wasiVekil });
