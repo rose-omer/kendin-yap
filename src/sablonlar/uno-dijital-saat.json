@@ -220,6 +220,15 @@
       "RTClib",
       "İki haneli sayı yazma"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Kart DS1307 saatini I2C ile okur; LCD tarihi ve günü gösterir."
+      },
+      {
+        "sure": 3000,
+        "yazi": "Alt satırdaki saat her saniye ilerler. Kart kapansa da pil saati korur."
+      }
+    ]
   }
 }

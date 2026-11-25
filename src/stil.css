@@ -345,6 +345,9 @@ textarea.kod-alani { white-space: pre; overflow: auto; line-height: 1.45; }
 .sim-kontroller { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.6rem 1rem; margin-top: 0.8rem; }
 .sim-kontrol input[type='range'] { padding: 0; margin: 0; }
 .sim-kontrol label { font-weight: 500; }
+.sim-kumanda { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3rem; border: 1px solid var(--cizgi); border-radius: var(--yaricap); padding: 0.4rem 0.5rem 0.5rem; margin: 0; }
+.sim-kumanda legend { font-weight: 500; padding: 0 0.3rem; }
+.sim-kumanda .dugme { padding: 0.3rem 0.2rem; min-height: 2rem; font-size: 0.85rem; }
 .sim-anahtar { display: flex; align-items: center; gap: 0.5rem; }
 .sim-anahtar input { width: 20px; height: 20px; margin: 0; }
 .seri-ekran { background: #0b1020; color: #a7f3d0; border-radius: 8px; padding: 0.6rem 0.8rem; height: 150px; overflow-y: auto; white-space: pre-wrap; margin: 0.4rem 0 0; font-size: 0.85rem; }

@@ -120,7 +120,7 @@ export function derlemeUcu(kok) {
     if (cikis !== 0 || !existsSync(wasmYolu)) {
       const eksik = /fatal error: '([^']+)' file not found/.exec(cikti);
       const ek = eksik
-        ? `\n\nBu kütüphane ESP32 simülasyonunda yok: ${eksik[1]}. Desteklenen: Arduino.h, Wire, Servo/ESP32Servo, DHT, Adafruit_SSD1306, Adafruit_GFX, SPI.`
+        ? `\n\nBu kütüphane ESP32 simülasyonunda yok: ${eksik[1]}. Desteklenen: Arduino.h, Wire, Servo/ESP32Servo, DHT, Adafruit_SSD1306, Adafruit_GFX, SPI, LiquidCrystal, Keypad.`
         : '';
       return { tamam: false, cikti: cikti.replaceAll(klasor + '\\', '').replaceAll(hal + '\\', '').trim() + ek };
     }

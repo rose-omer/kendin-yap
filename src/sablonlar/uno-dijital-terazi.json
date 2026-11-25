@@ -247,6 +247,38 @@
       "Kalibrasyon",
       "Dara (tare)"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "Açılışta dara alınır: boş kefe 0,0 g."
+      },
+      {
+        "sure": 3000,
+        "yazi": "Kefeye 250 g kondu: LCD 250,0 g yazar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "hx",
+          "deger": 250
+        }
+      },
+      {
+        "sure": 3000,
+        "yazi": "1 kg kondu: LCD 1000,0 g yazar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "hx",
+          "deger": 1000
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Ağırlık kalktı: LCD yeniden 0,0 g yazar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "hx",
+          "deger": 0
+        }
+      }
+    ]
   }
 }

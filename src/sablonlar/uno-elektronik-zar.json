@@ -257,6 +257,27 @@
       "random()",
       "Buton titreşimi"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 2000,
+        "yazi": "Gösterge \"-\" yazar; zar atılmayı bekliyor."
+      },
+      {
+        "sure": 300,
+        "yazi": "Düğmeye basıldı.",
+        "eylem": {
+          "tur": "bas",
+          "id": "btn1"
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Rakamlar döner, yavaşlar ve 1–6 arası bir sayıda durur.",
+        "eylem": {
+          "tur": "birak",
+          "id": "btn1"
+        }
+      }
+    ]
   }
 }

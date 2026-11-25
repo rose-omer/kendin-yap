@@ -197,6 +197,47 @@
       "Dizi ile çok LED",
       "Onaltılık (HEX) kod"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 2000,
+        "yazi": "IR alıcı kumandayı bekliyor."
+      },
+      {
+        "sure": 2000,
+        "yazi": "Kumandada 1: LED 1 yanar.",
+        "eylem": {
+          "tur": "ir",
+          "id": "ir",
+          "kod": 12
+        }
+      },
+      {
+        "sure": 2000,
+        "yazi": "Kumandada 2: LED 2 yanar.",
+        "eylem": {
+          "tur": "ir",
+          "id": "ir",
+          "kod": 24
+        }
+      },
+      {
+        "sure": 2000,
+        "yazi": "Kumandada 3: LED 3 yanar.",
+        "eylem": {
+          "tur": "ir",
+          "id": "ir",
+          "kod": 94
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Kumandada 0: hepsi söner.",
+        "eylem": {
+          "tur": "ir",
+          "id": "ir",
+          "kod": 22
+        }
+      }
+    ]
   }
 }

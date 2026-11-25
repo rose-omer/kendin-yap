@@ -36,12 +36,12 @@ Koyu tema (Grafit):
 
 | Özellik | Nerede |
 |---|---|
-| 51 hazır proje, Çok kolay'dan İleri'ye: LED, buton, sensör, servo, röle, web sunucusu, MQTT, Bluetooth, BLE, internetten veri. 41'i simülasyonda çalışır; 10'u (LCD, tuş takımı, gaz, alev, ses, IR, RTC, joystick, terazi, 7 segment) gerçek devre için şema, kod ve adımlarla gelir | Ana sayfa |
+| 51 hazır proje, Çok kolay'dan İleri'ye: LED, buton, sensör, servo, röle, web sunucusu, MQTT, Bluetooth, BLE, internetten veri. Hepsi simülasyonda çalışır ve canlı demoyla gelir | Ana sayfa |
 | Proje vitrini: kartta devre resmi ve özellik etiketleri; ilk adımda "Ne işe yarar / Nasıl çalışır / Ne öğreneceksin" ve kendi kendine oynayan canlı demo | Ana sayfa, Fikir |
 | Her proje 6 adım: Fikir, Parçalar, Bağlantılar, Kontrol, Kod, Test | Proje sayfası |
 | Gerçek görünüşlü etkileşimli şema: pin adı, bağlandığı yer, adım adım kablo | Bağlantılar |
 | Parçayı sürükle, iki pine tıklayarak kablo çiz; "Canlı dene" ile buton ve düğmeyi oynat | Bağlantılar |
-| Simülasyon (ESP32, Uno, Nano): kod yerelde derlenir, tarayıcıda çalışır; LED, RGB LED, buzzer, servo, buton, anahtar, potansiyometre, HC-SR04, PIR, LDR, NTC, DHT22, OLED, röle modülü, pompa, toprak nemi, kapı sensörü, seri ekran | Bağlantılar › ▶ Simülasyonu başlat |
+| Simülasyon (ESP32, Uno, Nano): kod yerelde derlenir, tarayıcıda çalışır; LED, RGB LED, buzzer, servo, buton, anahtar, potansiyometre, HC-SR04, PIR, LDR, NTC, DHT22, OLED, LCD 16x2 (paralel), 4x4 tuş takımı, 7 segment, NeoPixel, joystick, döner enkoder, gaz, alev, ses, IR alıcı (panelde kumanda), DS1307, MPU6050, HX711, step motor, röle (modül ve çıplak), pompa, toprak nemi, kapı sensörü, seri ekran. Katalogdaki her parça simülasyonda tepki verir | Bağlantılar › ▶ Simülasyonu başlat |
 | Fiyat karşılaştırma: Robotistan, Direnc.net, Motorobit; en ucuz ürün ve tek mağaza toplamı | Parçalar › Fiyatları karşılaştır |
 | Bağlantı denetimi: kısa devre, 5 V → 3,3 V pin, yalnız giriş pini, direnç yok, ortak GND yok… | Kontrol |
 | Kod, kablolardan üretilen pin tanımları, yükleme adımları, Wokwi'de ücretsiz simülasyon | Kod |
@@ -64,11 +64,13 @@ Düzenlemeler tarayıcıda (localStorage) saklanır. Kalıcı yedek için Test a
 - `araclar/` (git dışı, ~460 MB): arduino-cli 1.6.0, `arduino:avr` 1.8.8 çekirdeği, Servo kütüphanesi. Yeniden kurmak için:
   1. arduino-cli 1.6.0 Windows zip'ini `github.com/arduino/arduino-cli/releases` adresinden indir, `araclar/arduino-cli/` içine aç.
   2. `ARDUINO_DIRECTORIES_DATA`, `_DOWNLOADS`, `_USER` değişkenlerini `araclar/arduino15`, `araclar/arduino15/staging`, `araclar/sketchbook` yap.
-  3. `arduino-cli core install arduino:avr` ve `arduino-cli lib install Servo` çalıştır.
+  3. `arduino-cli core install arduino:avr` ve `arduino-cli lib install Servo Stepper LiquidCrystal Keypad "Adafruit NeoPixel" IRremote RTClib "HX711 Arduino Library" "DHT sensor library" "Adafruit SSD1306" "Adafruit MPU6050"` çalıştır (Adafruit kütüphaneleri BusIO ve Unified Sensor'ı da kurar).
 - `sunucu/derle.js`: `POST /__derle` kodu yerelde derler, `.hex` döner. Yalnız Uno ve Nano.
 - `src/simulasyon/`: avr8js (MIT) ile ATmega328P; parça davranışları `simulasyon.js` içinde.
+- LCD 16x2 ve tuş takımı: `src/simulasyon/lcd.js`. Uno'da E ucunun düşen kenarında RS ve D0–D7 okunur, HD44780 taklidine gider (4 ve 8 bit). Tuş takımında basılı tuş satır ve sütun pinini kısa devre eder; Keypad kütüphanesi hızlı taradığı için giriş, çıkış değiştiği anda güncellenir; basımlar kuyruğa girer, simülasyon zamanında en az 60 ms sürer. I2C LCD henüz yok.
+- Öteki parçalar: kartlardan bağımsız davranışlar `src/simulasyon/parcalar.js` (modüller, röle, enkoder, 7 segment, NeoPixel zinciri, analog sensörler); yonga taklitleri `src/simulasyon/cihazlar.js` (DS1307, MPU6050, step sayacı, NEC, DHT22 ve HX711 verisi). Uno'da bunlar gerçek kütüphaneyle konuşur: DHT22 ve IR saat olaylarıyla dalga olarak çalınır, HX711 SCK kenarında bit verir, NeoPixel DIN'deki darbe genişliğinden çözülür, I2C cihazları avr8js TWI ile bağlanır. HX711: 1 g = 420 birim.
 - `sunucu/fiyat.js`: `GET /__fiyat` mağazaların arama sayfasını okur, 6 saat önbellekte tutar. Mağaza sayfa yapısı değişirse ayıklayıcıyı güncelle.
-- ESP32: `esp32-hal/` Arduino-ESP32 API taklidi (Arduino.h, Serial, ledc, tone, pulseIn, kesmeler, Wire, Servo/ESP32Servo, DHT, Adafruit_GFX/SSD1306, SPI). Kod `araclar/zig` (Zig 0.17.1) ile `wasm32-wasi`'ye derlenir, `src/simulasyon/esp32-isci.js` Web Worker'ında koşar. Gerçek işlemci değil; ham TCP (`WiFiClient`), BLE istemci tarafı ve taklidi olmayan kütüphaneler çalışmaz.
+- ESP32: `esp32-hal/` Arduino-ESP32 API taklidi (Arduino.h, Serial, ledc, tone, pulseIn, kesmeler, Wire, Servo/ESP32Servo, DHT, Adafruit_GFX/SSD1306, SPI, LiquidCrystal, Keypad, Adafruit_NeoPixel, IRremote, HX711, RTClib, Adafruit_MPU6050, Stepper). Wire gerçek veri yoludur: baytlar işçideki I2C cihaz taklitlerine gider. Kod `araclar/zig` (Zig 0.17.1) ile `wasm32-wasi`'ye derlenir, `src/simulasyon/esp32-isci.js` Web Worker'ında koşar. Gerçek işlemci değil; ham TCP (`WiFiClient`), BLE istemci tarafı ve taklidi olmayan kütüphaneler çalışmaz.
 - MQTT: `PubSubClient` taklidi sayfadaki sanal sunucuya bağlanır (joker konular `+`/`#`, kalıcı mesaj). Panel ikinci istemci gibi yayın yapar.
 - Bluetooth: `BluetoothSerial` (panelde telefon terminali) ve BLE sunucu (özellik okuma/yazma/bildirim). `Serial.read()` panelden beslenir.
 - Olaylar (seri, MQTT, Bluetooth) ortak bellekteki olay kutusuyla işçiye gider (`src/simulasyon/esp32-ortak.js`).

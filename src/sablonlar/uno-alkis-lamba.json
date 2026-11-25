@@ -119,6 +119,43 @@
       "Debounce",
       "Durum değiştirme (toggle)"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 2500,
+        "yazi": "Lamba kapalı; sensör sesi dinliyor."
+      },
+      {
+        "sure": 500,
+        "yazi": "1. alkış.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "ses"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "2. alkış: lamba yanar.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "ses"
+        }
+      },
+      {
+        "sure": 500,
+        "yazi": "1. alkış.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "ses"
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "2. alkış: lamba söner.",
+        "eylem": {
+          "tur": "hareket",
+          "id": "ses"
+        }
+      }
+    ]
   }
 }

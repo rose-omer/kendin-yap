@@ -373,6 +373,33 @@
       "Karakter dizisi karşılaştırma",
       "LCD ile arayüz"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 2500,
+        "yazi": "LCD şifre istiyor; kilit kapalı."
+      },
+      {
+        "sure": 4000,
+        "yazi": "Yanlış şifre (5555 #): kırmızı LED yanar, buzzer uyarır.",
+        "eylem": {
+          "tur": "tus",
+          "id": "tus",
+          "tuslar": "5555#"
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Doğru şifre (1234 #): servo kilidi açar, yeşil LED yanar.",
+        "eylem": {
+          "tur": "tus",
+          "id": "tus",
+          "tuslar": "1234#"
+        }
+      },
+      {
+        "sure": 5000,
+        "yazi": "LCD geri sayar; 5 saniye sonra kilit kendiliğinden kapanır."
+      }
+    ]
   }
 }

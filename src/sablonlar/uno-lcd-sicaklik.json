@@ -234,6 +234,29 @@
       "DHT22 okuma",
       "Özel karakter"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 3000,
+        "yazi": "LCD sıcaklığı ve nemi gösterir: 24 °C, %45."
+      },
+      {
+        "sure": 3500,
+        "yazi": "Oda ısındı: LCD 31 °C yazar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:sicaklik",
+          "deger": 31
+        }
+      },
+      {
+        "sure": 3500,
+        "yazi": "Nem arttı: LCD %80 yazar.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "dht:nem",
+          "deger": 80
+        }
+      }
+    ]
   }
 }

@@ -141,6 +141,20 @@
       "Sensör ısınma süresi",
       "millis()"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 3500,
+        "yazi": "Temiz hava: ölçüm yaklaşık 145. Sensör ilk 60 saniye ısınır; LED yanıp söner."
+      },
+      {
+        "sure": 4000,
+        "yazi": "Gaz kaçağı: ölçüm 700'ü geçer. Isınma bitince LED yanar, buzzer öter.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "gaz",
+          "deger": 70
+        }
+      }
+    ]
   }
 }

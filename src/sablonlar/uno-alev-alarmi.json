@@ -137,6 +137,29 @@
       "Dijital sensör",
       "tone ile ses"
     ],
-    "demo": []
+    "demo": [
+      {
+        "sure": 2500,
+        "yazi": "Alev yok: LED sönük, buzzer sessiz."
+      },
+      {
+        "sure": 3500,
+        "yazi": "Çakmak yaklaştı: LED yanıp söner, buzzer öter.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "alev",
+          "deger": 80
+        }
+      },
+      {
+        "sure": 2500,
+        "yazi": "Alev söndü: alarm durur.",
+        "eylem": {
+          "tur": "ayarla",
+          "anahtar": "alev",
+          "deger": 0
+        }
+      }
+    ]
   }
 }

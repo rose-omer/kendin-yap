@@ -1,7 +1,7 @@
 // ATmega328P (Arduino Uno / Nano) makinesi: avr8js üzerine ince katman.
 import {
-  AVRADC, AVRIOPort, AVRTimer, AVRUSART, CPU, PinState, adcConfig, avrInstruction,
-  portBConfig, portCConfig, portDConfig, timer0Config, timer1Config, timer2Config, usart0Config,
+  AVRADC, AVRIOPort, AVRTWI, AVRTimer, AVRUSART, CPU, PinState, adcConfig, avrInstruction,
+  portBConfig, portCConfig, portDConfig, timer0Config, timer1Config, timer2Config, twiConfig, usart0Config,
 } from 'avr8js';
 
 export const FREKANS = 16e6;
@@ -54,6 +54,29 @@ export class AvrMakine {
     };
     this.seri = new AVRUSART(this.cpu, usart0Config, FREKANS);
     this.adc = new AVRADC(this.cpu, adcConfig);
+    this.twi = new AVRTWI(this.cpu, twiConfig, FREKANS);
+  }
+
+  // I2C veri yolu: cihazlar adres → { basla(yazma), yaz(bayt) → onay, oku() → bayt, dur() }.
+  i2cBagla(cihazlar) {
+    const twi = this.twi;
+    let etkin = null;
+    twi.eventHandler = {
+      start: () => twi.completeStart(),
+      stop: () => {
+        etkin?.dur();
+        etkin = null;
+        twi.completeStop();
+      },
+      connectToSlave: (adres, yazma) => {
+        etkin?.dur();
+        etkin = cihazlar.get(adres) || null;
+        etkin?.basla(yazma);
+        twi.completeConnect(!!etkin);
+      },
+      writeByte: (v) => twi.completeWrite(etkin ? etkin.yaz(v) !== false : false),
+      readByte: () => twi.completeRead(etkin ? etkin.oku() : 0xff),
+    };
   }
 
   get zamanSn() {

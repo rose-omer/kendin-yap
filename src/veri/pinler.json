@@ -3895,12 +3895,7 @@
     "name": "DIN",
     "x": 21,
     "y": 3.5,
-    "signals": [
-     {
-      "type": "power",
-      "signal": "GND"
-     }
-    ]
+    "signals": []
    }
   ]
  },

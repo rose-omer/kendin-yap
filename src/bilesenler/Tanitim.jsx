@@ -6,7 +6,8 @@ import { asilProje, ozellikEtiketleri } from '../proje.js';
 // Projenin vitrini: ne işe yarar, nasıl çalışır, bitince nasıl görünür ve kendi kendine oynayan canlı demo.
 // Demo adımları proje dosyasındaki tanitim.demo listesinden gelir:
 //   { sure: ms, yazi: 'açıklama', eylem: { tur: 'ayarla' | 'bas' | 'birak' | 'pot' | 'anahtar' | 'hareket'
-//     | 'mqtt' | 'btbaglan' | 'bt' | 'blebaglan' | 'bleyaz' | 'web', ... } }
+//     | 'mqtt' | 'btbaglan' | 'bt' | 'blebaglan' | 'bleyaz' | 'web' | 'tus' | 'ir' | 'enkoder' | 'joystick', ... } }
+// 'tus': tuş takımında tuslar dizisindeki tuşlara sırayla basar (her tuş 350 ms).
 
 function eylemUygula(e, sim, elemanBul) {
   if (!e || !sim) return;
@@ -23,6 +24,21 @@ function eylemUygula(e, sim, elemanBul) {
   if (e.tur === 'blebaglan') sim.bleBaglan?.(true);
   if (e.tur === 'bleyaz') sim.bleYaz?.(e.no, e.veri);
   if (e.tur === 'web') sim.webIstek?.('GET', e.yol, e.sorgu || '').catch(() => {});
+  if (e.tur === 'ir') sim.ir?.(e.id, e.kod);
+  if (e.tur === 'enkoder' && el) {
+    for (let i = 0; i < Math.abs(e.adim || 1); i++) el.dispatchEvent(new InputEvent((e.adim || 1) > 0 ? 'rotate-cw' : 'rotate-ccw'));
+  }
+  if (e.tur === 'joystick' && el) {
+    el.xValue = e.x ?? 0;
+    el.yValue = e.y ?? 0;
+    if (e.bas != null) el.pressed = !!e.bas;
+  }
+  if (e.tur === 'tus' && el) {
+    [...String(e.tuslar || '')].forEach((t, i) => {
+      setTimeout(() => el.keyStrokeDown?.(t), i * 350);
+      setTimeout(() => el.keyStrokeUp?.(t), i * 350 + 180);
+    });
+  }
 }
 
 export function CanliDemo({ proje, otomatik = false }) {
@@ -79,7 +95,9 @@ export function CanliDemo({ proje, otomatik = false }) {
       return;
     }
     setDurum('oynuyor');
+    let seriTampon = '';
     const baslat = () => {
+      seriTampon = '';
       simRef.current?.durdur();
       simRef.current = simulasyonBaslat({
         proje,
@@ -87,9 +105,12 @@ export function CanliDemo({ proje, otomatik = false }) {
         wasm: sonuc.wasm,
         elemanBul,
         sessiz: true,
+        // Seri çıktı satır ortasından bölünerek gelebilir: yalnız tamamlanan satırı göster.
         onSeri: (m) => {
-          const satirlar = m.split('\n').map((x) => x.trim()).filter(Boolean);
-          if (satirlar.length) setSonSatir(satirlar.at(-1));
+          const satirlar = (seriTampon + m).split('\n');
+          seriTampon = satirlar.pop();
+          const tam = satirlar.map((x) => x.trim()).filter(Boolean);
+          if (tam.length) setSonSatir(tam.at(-1));
         },
         onHata: () => {},
       });

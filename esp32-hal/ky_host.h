@@ -19,6 +19,14 @@ KY_ICE(ky_zaman_us) double ky_zaman_us();
 KY_ICE(ky_darbe) double ky_darbe(int pin, int seviye, double zaman_asimi_us);
 KY_ICE(ky_dht) double ky_dht(int pin, int tur);
 KY_ICE(ky_ekran) void ky_ekran(const char *komutlar, int uzunluk);
+KY_ICE(ky_lcd) void ky_lcd(int e_pini, int rs, int bayt);
+// I2C veri yolu (cihazlar işçide: src/simulasyon/cihazlar.js). Yazma: 0 onay, 2 cihaz yok.
+KY_ICE(ky_i2c_yaz) int ky_i2c_yaz(int adres, const uint8_t *veri, int n);
+KY_ICE(ky_i2c_oku) int ky_i2c_oku(int adres, uint8_t *hedef, int n);
+// Parça ölçümleri ve sinyalleri
+KY_ICE(ky_hx711) double ky_hx711(int dout_pini);
+KY_ICE(ky_neopiksel) void ky_neopiksel(int pin, const uint8_t *grb, int n);
+KY_ICE(ky_ir_al) int ky_ir_al();
 KY_ICE(ky_kesme_izle) void ky_kesme_izle(int pin, int mod);
 KY_ICE(ky_rastgele) int ky_rastgele();
 // Ağ

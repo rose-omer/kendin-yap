@@ -117,6 +117,13 @@ export function SimKontrolleri({ s }) {
                   <label htmlFor={`${kimlik}-${k.anahtar}`}>{k.ad} · {k.etiket}: <strong>{s.ayarlar[k.anahtar]} {k.birim}</strong></label>
                   <input id={`${kimlik}-${k.anahtar}`} type="range" min={k.min} max={k.max} value={s.ayarlar[k.anahtar] ?? k.ilk} onChange={(e) => s.ayarla(k.anahtar, Number(e.target.value))} />
                 </>
+              ) : k.tur === 'kumanda' ? (
+                <fieldset className="sim-kumanda">
+                  <legend>{k.ad} · {k.etiket}</legend>
+                  {k.tuslar.map(([ad, kod]) => (
+                    <button key={kod} type="button" className="dugme ikincil" aria-label={`Kumanda tuşu ${ad}`} onClick={() => s.sim()?.ir?.(k.id, kod)}>{ad}</button>
+                  ))}
+                </fieldset>
               ) : k.tur === 'anahtar' ? (
                 <label className="sim-anahtar">
                   <input type="checkbox" checked={!!s.ayarlar[k.anahtar]} onChange={(e) => s.ayarla(k.anahtar, e.target.checked ? 1 : 0)} />

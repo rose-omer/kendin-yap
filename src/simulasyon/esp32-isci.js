@@ -1,7 +1,8 @@
 // ESP32 çalıştırıcısı (Web Worker): derlenmiş sketch.wasm'ı koşturur.
 // delay() işçiyi gerçekten bekletir (Atomics.wait); girişler ortak bellekten okunur,
 // çıkışlar ~60 Hz ile ana sayfaya gönderilir.
-import { F_DARBE, F_DHT, I_ANALOG, I_GIRIS, K_DUR, K_UYKU, PIN_SAYISI, W_DURUM, W_UZUNLUK, O_DURUM, O_UZUNLUK, AYRAC, gorunumler } from './esp32-ortak.js';
+import { AdimSayaci, i2cCihazlari } from './cihazlar.js';
+import { CIHAZ_ALANI, F_CIHAZ, F_OLCU, F_DARBE, F_DHT, I_ANALOG, I_GIRIS, I_KISA, KISA_SAYISI, K_DUR, K_UYKU, PIN_SAYISI, W_DURUM, W_UZUNLUK, O_DURUM, O_UZUNLUK, AYRAC, gorunumler } from './esp32-ortak.js';
 
 const INPUT = 0x01;
 const OUTPUT = 0x03;
@@ -21,6 +22,12 @@ const sonGiris = new Int32Array(PIN_SAYISI);
 let degisen = {};
 let seri = '';
 let ekran = null;
+let lcd = []; // [e pini, rs, bayt] üçlüleri
+let neo = null; // GPIO → son NeoPixel baytları
+let adim = null; // step motor id → açı
+let i2cCihaz = new Map(); // adres → cihaz (cihazlar.js)
+let stepler = []; // { id, pinler: [A+, A-, B+, B-], sayac }
+const irKuyruk = []; // panelden gelen kumanda komutları
 let sonGonderim = 0;
 let kesmede = false;
 
@@ -46,6 +53,7 @@ function olaylariIsle() {
   Atomics.store(int, O_DURUM, 0);
   if (kanal === 'seri' || kanal === 'bt') girisler[kanal === 'seri' ? 0 : 1].push(...kodla.encode(alanlar[0]));
   if (kanal === 'btbaglan') btBagli = Number(alanlar[0]);
+  if (kanal === 'ir') irKuyruk.push(Number(alanlar[0]));
   if (kanal === 'mqtt') mqttKuyruk.push(`${alanlar[0]}${AYRAC}${alanlar[1]}`);
   if (kanal === 'ble') {
     const [tur, no, veri = ''] = alanlar;
@@ -109,17 +117,29 @@ function gonder(zorla = false) {
   const simdi = performance.now();
   if (!zorla && simdi - sonGonderim < 16) return;
   sonGonderim = simdi;
-  if (Object.keys(degisen).length || seri || ekran != null) {
-    postMessage({ tur: 'durum', pinler: degisen, seri, ekran });
+  if (Object.keys(degisen).length || seri || ekran != null || lcd.length || neo || adim) {
+    postMessage({ tur: 'durum', pinler: degisen, seri, ekran, lcd: lcd.length ? lcd : null, neo, adim });
+    neo = null;
+    adim = null;
     degisen = {};
     seri = '';
     ekran = null;
+    lcd = [];
   }
 }
 
 function girisOku(pin) {
   if (pin < 0 || pin >= PIN_SAYISI) return 0;
   if (pinMod[pin] === OUTPUT) return cikis[pin];
+  // Tuş takımı: basılı tuş bu pini bir çıkış pinine bağlıyorsa o çıkışın değeri okunur.
+  let surulen = null;
+  for (let i = 0; i < KISA_SAYISI; i++) {
+    const a = Atomics.load(int, I_KISA + i * 2);
+    const b = Atomics.load(int, I_KISA + i * 2 + 1);
+    const diger = a === pin ? b : b === pin ? a : -1;
+    if (diger >= 0 && pinMod[diger] === OUTPUT) surulen = surulen === 0 ? 0 : cikis[diger];
+  }
+  if (surulen != null) return surulen;
   const v = Atomics.load(int, I_GIRIS + pin);
   if (v === -1) return pinMod[pin] & PULLUP ? 1 : 0;
   return v;
@@ -172,6 +192,7 @@ const env = {
   },
   ky_yaz(pin, deger) {
     if (pin < 0 || pin >= PIN_SAYISI) return;
+    adimSay(pin, deger);
     if (pinMod[pin] !== OUTPUT) {
       pinMod[pin] = OUTPUT;
       pinDegisti(pin, 'mod', 'cikis');
@@ -226,6 +247,35 @@ const env = {
   },
   ky_ekran(p, n) {
     ekran = metin(p, n);
+    gonder();
+  },
+  // I2C: 0 onay, 2 adreste cihaz yok.
+  ky_i2c_yaz(adres, p, n) {
+    const c = i2cCihaz.get(adres);
+    if (!c) return 2;
+    c.basla(true);
+    const b = new Uint8Array(bellek.buffer, p, n);
+    for (const x of b) c.yaz(x);
+    c.dur();
+    return 0;
+  },
+  ky_i2c_oku(adres, p, n) {
+    const c = i2cCihaz.get(adres);
+    if (!c) return 0;
+    c.basla(false);
+    const b = new Uint8Array(bellek.buffer, p, n);
+    for (let i = 0; i < n; i++) b[i] = c.oku();
+    c.dur();
+    return n;
+  },
+  ky_hx711: (pin) => (pin >= 0 && pin < PIN_SAYISI ? float[F_OLCU + pin] : NaN),
+  ky_neopiksel(pin, p, n) {
+    (neo ||= {})[pin] = [...new Uint8Array(bellek.buffer, p, n)];
+    gonder();
+  },
+  ky_ir_al: () => (irKuyruk.length ? irKuyruk.shift() : -1),
+  ky_lcd(e, rs, bayt) {
+    lcd.push(e, rs, bayt & 0xff);
     gonder();
   },
   ky_kesme_izle(pin, mod) {
@@ -364,6 +414,15 @@ const wasiVekil = new Proxy(wasi, { get: (h, ad) => h[ad] || (() => 52) }); // 5
 onmessage = async ({ data }) => {
   if (data.tur !== 'baslat') return;
   ({ int, float, posta, olayKutusu } = gorunumler(data.sab));
+  const cihazlar = data.cihazlar || { i2c: [], stepler: [] };
+  i2cCihaz = i2cCihazlari(cihazlar.i2c.map((t) => ({
+    ...t,
+    deger: () => {
+      const v = (i) => float[F_CIHAZ + t.alan * CIHAZ_ALANI + i];
+      return { ax: v(0), ay: v(1), az: v(2), gx: v(3), gy: v(4), gz: v(5), sicaklik: v(6) };
+    },
+  })));
+  stepler = cihazlar.stepler.map((s) => ({ ...s, sayac: new AdimSayaci() }));
   try {
     const { instance } = await WebAssembly.instantiate(data.wasm, { env, wasi_snapshot_preview1: wasiVekil });
     disa = instance.exports;
@@ -394,3 +453,14 @@ onmessage = async ({ data }) => {
   gonder(true);
   postMessage({ tur: 'bitti' });
 };
+
+// Step motor: bobin pinine yazılınca fazı güncelle. Açı ana sayfaya durum iletisiyle gider.
+function adimSay(pin, deger) {
+  for (const s of stepler) {
+    const i = s.pinler.indexOf(pin);
+    if (i < 0) continue;
+    const v = s.pinler.map((g, k) => (k === i ? deger : g >= 0 && pinMod[g] === OUTPUT ? cikis[g] : 0));
+    s.sayac.guncelle(...v.map(Boolean));
+    (adim ||= {})[s.id] = s.sayac.aci;
+  }
+}

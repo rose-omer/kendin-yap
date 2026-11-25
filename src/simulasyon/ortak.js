@@ -1,4 +1,5 @@
 // Uno ve ESP32 simülasyonlarının ortak parçaları.
+import { IR_TUSLARI } from './cihazlar.js';
 
 export class Birlesim {
   constructor() { this.ata = new Map(); }
@@ -22,6 +23,19 @@ export const KONTROLLER = {
     { alan: 'sicaklik', tur: 'kaydirici', etiket: 'Sıcaklık', birim: '°C', min: -20, max: 60, ilk: 24 },
     { alan: 'nem', tur: 'kaydirici', etiket: 'Nem', birim: '%', min: 0, max: 100, ilk: 45 },
   ],
+  'wokwi-gas-sensor': [{ tur: 'kaydirici', etiket: 'Gaz', birim: '%', min: 0, max: 100, ilk: 5 }],
+  'wokwi-flame-sensor': [{ tur: 'kaydirici', etiket: 'Alev', birim: '%', min: 0, max: 100, ilk: 0 }],
+  'wokwi-small-sound-sensor': [
+    { alan: 'seviye', tur: 'kaydirici', etiket: 'Ortam sesi', birim: '%', min: 0, max: 100, ilk: 10 },
+    { tur: 'dugme', etiket: 'Alkışla' },
+  ],
+  'wokwi-hx711': [{ tur: 'kaydirici', etiket: 'Ağırlık', birim: 'g', min: 0, max: 5000, ilk: 0 }],
+  'wokwi-mpu6050': [
+    { alan: 'x', tur: 'kaydirici', etiket: 'Eğim X', birim: '°', min: -90, max: 90, ilk: 0 },
+    { alan: 'y', tur: 'kaydirici', etiket: 'Eğim Y', birim: '°', min: -90, max: 90, ilk: 0 },
+    { alan: 'donme', tur: 'kaydirici', etiket: 'Dönme Z', birim: '°/s', min: -250, max: 250, ilk: 0 },
+  ],
+  'wokwi-ir-receiver': [{ tur: 'kumanda', etiket: 'Kumanda', tuslar: IR_TUSLARI }],
   'ky-modul:toprak': [{ tur: 'kaydirici', etiket: 'Toprak nemi', birim: '%', min: 0, max: 100, ilk: 20 }],
   'ky-modul:kapi': [{ tur: 'anahtar', etiket: 'Kapı açık', ilk: 0 }],
 };
@@ -36,7 +50,14 @@ export function kontrolTuru(p) {
 export function kontrolListesi(proje, destekli, adBul) {
   return proje.parts
     .filter((p) => KONTROLLER[kontrolTuru(p)] && destekli(p))
-    .flatMap((p) => KONTROLLER[kontrolTuru(p)].map((k) => ({ ...k, id: p.id, anahtar: k.alan ? `${p.id}:${k.alan}` : p.id, ad: adBul(p) })));
+    .flatMap((p) => KONTROLLER[kontrolTuru(p)].map((k) => ({
+      ...k,
+      // HX711 türü ölçeği verir: "50kg" ise kaydırıcı 50 000 g'a çıkar.
+      ...(p.type === 'wokwi-hx711' && /(\d+)\s*kg/i.test(p.attrs?.type || '') ? { max: Number(/(\d+)\s*kg/i.exec(p.attrs.type)[1]) * 1000 } : {}),
+      id: p.id,
+      anahtar: k.alan ? `${p.id}:${k.alan}` : p.id,
+      ad: adBul(p),
+    })));
 }
 
 // Buzzer sesi: her parça için bir osilatör.
